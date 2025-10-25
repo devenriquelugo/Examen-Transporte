@@ -1,0 +1,119 @@
+@model ExamenTransporte.Models.CargaExamenViewModel
+@{
+    ViewData["Title"] = "Cargar Examen";
+}
+
+<div class="container mx-auto px-4 py-8" style="max-width: 1024px;">
+    
+    <!-- Header -->
+    <div class="card-custom">
+        <div class="flex items-center justify-center mb-2">
+            <svg class="icon-primary" style="width: 40px; height: 40px; margin-right: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h1 class="text-primary" style="font-size: 28px; font-weight: bold; margin: 0;">
+                Sistema de Exámenes de Transporte
+            </h1>
+        </div>
+        <p class="text-center" style="color: #718096; margin-top: 8px;">
+            Carga los archivos de examen y respuestas en formato Word
+        </p>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card-custom">
+        <form asp-action="CargarArchivos" method="post" enctype="multipart/form-data">
+            
+            <!-- Archivo de Examen -->
+            <div style="margin-bottom: 24px;">
+                <label class="form-label-custom">
+                    <svg class="icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    Archivo de Examen
+                </label>
+                <input 
+                    type="file" 
+                    asp-for="ArchivoExamen"
+                    accept=".doc,.docx"
+                    class="form-input-custom"
+                    required
+                />
+                <p style="margin-top: 4px; font-size: 12px; color: #718096;">
+                    Formato: .DOC o .DOCX (Microsoft Word)
+                </p>
+            </div>
+
+            <!-- Archivo de Respuestas -->
+            <div style="margin-bottom: 24px;">
+                <label class="form-label-custom">
+                    <svg class="icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Archivo de Respuestas
+                </label>
+                <input 
+                    type="file" 
+                    asp-for="ArchivoRespuestas"
+                    accept=".doc,.docx"
+                    class="form-input-custom"
+                    required
+                />
+                <p style="margin-top: 4px; font-size: 12px; color: #718096;">
+                    Formato: .DOC o .DOCX (Microsoft Word)
+                </p>
+            </div>
+
+            <!-- Botón de Envío -->
+            <div style="padding-top: 16px;">
+                <button type="submit" class="btn-primary-custom" style="width: 100%; display: flex; align-items: center; justify-content: center;">
+                    <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    Cargar y Procesar Archivos
+                </button>
+            </div>
+        </form>
+
+        <!-- Mensaje de resultado -->
+        @if (!string.IsNullOrEmpty(Model.Mensaje))
+        {
+            if (Model.Exito)
+            {
+                <div class="alert-success-custom" style="margin-top: 24px;">
+                    <svg class="icon-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p style="font-weight: 600; margin: 0;">@Model.Mensaje</p>
+                </div>
+            }
+            else
+            {
+                <div class="alert-error-custom" style="margin-top: 24px;">
+                    <svg class="icon-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p style="font-weight: 600; margin: 0;">@Model.Mensaje</p>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Información adicional -->
+    <div class="info-box">
+        <div>
+            <svg class="icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div>
+            <h3 class="text-primary" style="font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">
+                Formato de Archivos
+            </h3>
+            <div class="text-primary-dark" style="font-size: 14px;">
+                <p style="margin: 4px 0;"><strong>Archivo de Examen:</strong> Documento Word (.doc o .docx) con las preguntas y opciones</p>
+                <p style="margin: 4px 0;"><strong>Archivo de Respuestas:</strong> Documento Word (.doc o .docx) con las respuestas correctas</p>
+            </div>
+        </div>
+    </div>
+</div>

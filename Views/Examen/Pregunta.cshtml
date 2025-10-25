@@ -1,0 +1,143 @@
+@model ExamenTransporte.Models.ExamenViewModel
+
+@{
+    ViewData["Title"] = "Examen en Curso";
+}
+
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-2xl font-bold text-gray-800">@Model.TituloExamen</h1>
+                <span class="text-lg font-semibold text-[#2f6cd6]">
+                    Pregunta @Model.PreguntaActual de @Model.TotalPreguntas
+                </span>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-[#2f6cd6] h-3 rounded-full transition-all duration-300"
+                     style="width: @(((double)Model.PreguntaActual / Model.TotalPreguntas) * 100)%"></div>
+            </div>
+        </div>
+
+        <!-- Pregunta -->
+        <div class="bg-white rounded-xl shadow-md p-8 mb-6">
+            <div class="flex items-start space-x-4 mb-6">
+                <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span class="text-xl font-bold text-[#2f6cd6]">@Model.Pregunta.Numero</span>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xl text-gray-800 leading-relaxed">@Model.Pregunta.Texto</p>
+                </div>
+            </div>
+
+            <!-- Opciones -->
+            <form id="formExamen" method="post" action="@Url.Action("Comprobar")">
+                <div class="space-y-3">
+                    @foreach (var opcion in Model.Pregunta.Opciones)
+                    {
+                        var isSelected = Model.OpcionSeleccionada == opcion.Id;
+                        var isCorrect = Model.MostroRespuesta && opcion.EsCorrecta;
+                        var isIncorrect = Model.MostroRespuesta && isSelected && !opcion.EsCorrecta;
+
+                        var borderClass = isCorrect ? "border-[#8cf26a] bg-green-50" :
+                        isIncorrect ? "border-[#f26a6a] bg-red-50" :
+                        isSelected ? "border-[#2f6cd6] bg-blue-50" :
+                        "border-gray-300";
+
+                        <label class="block cursor-pointer">
+                            <div class="border-4 @borderClass rounded-xl p-4 transition-all duration-200 hover:shadow-md @(Model.MostroRespuesta ? "cursor-not-allowed" : "hover:border-[#2f6cd6]")">
+                                <div class="flex items-start space-x-4">
+                                    <input type="radio"
+                                           name="opcionId"
+                                           value="@opcion.Id"
+                                           class="mt-1 w-5 h-5 text-[#2f6cd6]"
+                                           onchange="habilitarComprobar()"
+                                           @(isSelected ? "checked" : "")
+                                           @(Model.MostroRespuesta ? "disabled" : "") />
+
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="font-bold text-lg text-gray-700">@opcion.Letra)</span>
+                                            <span class="text-gray-800">@opcion.Texto</span>
+                                        </div>
+
+                                        @if (Model.MostroRespuesta)
+                                        {
+                                            @if (isCorrect)
+                                            {
+                                                <div class="mt-2 flex items-center text-green-700">
+                                                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    <span class="font-semibold">Respuesta correcta</span>
+                                                </div>
+                                            }
+                                            @if (isIncorrect)
+                                            {
+                                                <div class="mt-2 flex items-center text-red-700">
+                                                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    <span class="font-semibold">Respuesta incorrecta</span>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    }
+                </div>
+            </form>
+        </div>
+
+        <!-- Botones de navegación -->
+        <div class="flex justify-between items-center gap-4">
+            <!-- Botón Atrás -->
+            <form method="post" action="@Url.Action("Anterior")">
+                <button type="submit"
+                        class="px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        @(!Model.PuedeRetroceder ? "disabled" : "")>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Atrás</span>
+                </button>
+            </form>
+
+            <div class="flex gap-4">
+                <!-- Botón Comprobar -->
+                @if (!Model.MostroRespuesta)
+                {
+                    <button type="button"
+                            id="btnComprobar"
+                            onclick="document.getElementById('formExamen').submit()"
+                            class="px-8 py-3 bg-[#2f6cd6] text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        Comprobar
+                    </button>
+                }
+
+                <!-- Botón Siguiente -->
+                <form method="post" action="@Url.Action("Siguiente")">
+                    <button type="submit"
+                            class="px-8 py-3 bg-[#8cf26a] text-gray-800 rounded-lg font-semibold hover:bg-green-400 transition-colors flex items-center space-x-2">
+                        <span>Siguiente</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function habilitarComprobar() {
+        document.getElementById('btnComprobar').disabled = false;
+    }
+</script>

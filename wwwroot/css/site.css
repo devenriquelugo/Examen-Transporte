@@ -1,0 +1,272 @@
+/* ========================================
+   CONFIGURACIÓN BASE (Original)
+   ======================================== */
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+/* ========================================
+   VARIABLES DE COLORES PERSONALIZADOS
+   ======================================== */
+:root {
+    --color-primary: #2f6cd6;
+    --color-primary-hover: #2557b8;
+    --color-primary-light: #e8f0fc;
+    --color-primary-dark: #1e4d99;
+    --color-success: #8cf26a;
+    --color-success-bg: #e8fce0;
+    --color-success-dark: #4a9636;
+    --color-error: #f26a6a;
+    --color-error-bg: #ffe5e5;
+    --color-error-dark: #c53030;
+    --color-gray-100: #f7fafc;
+    --color-gray-500: #718096;
+    --color-gray-700: #2d3748;
+    --color-gray-800: #1a202c;
+}
+
+/* ========================================
+   CLASES DE COLOR - TEXTO
+   ======================================== */
+.text-primary {
+    color: var(--color-primary) !important;
+}
+
+.text-primary-dark {
+    color: var(--color-primary-dark) !important;
+}
+
+.text-success {
+    color: var(--color-success-dark) !important;
+}
+
+.text-error {
+    color: var(--color-error-dark) !important;
+}
+
+/* ========================================
+   CLASES DE COLOR - FONDO
+   ======================================== */
+.bg-primary {
+    background-color: var(--color-primary) !important;
+}
+
+.bg-primary-light {
+    background-color: var(--color-primary-light) !important;
+}
+
+.bg-success {
+    background-color: var(--color-success-bg) !important;
+}
+
+.bg-error {
+    background-color: var(--color-error-bg) !important;
+}
+
+/* ========================================
+   CLASES DE COLOR - BORDES
+   ======================================== */
+.border-primary {
+    border-color: var(--color-primary) !important;
+}
+
+.border-success {
+    border-color: var(--color-success) !important;
+}
+
+.border-error {
+    border-color: var(--color-error) !important;
+}
+
+/* ========================================
+   BOTONES PERSONALIZADOS
+   ======================================== */
+.btn-primary-custom {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+    .btn-primary-custom:hover {
+        background-color: var(--color-primary-hover);
+        transform: scale(1.02);
+        box-shadow: 0 4px 6px rgba(47, 108, 214, 0.3);
+    }
+
+    .btn-primary-custom:active {
+        transform: scale(0.98);
+    }
+
+/* ========================================
+   INPUT FILE PERSONALIZADO
+   ======================================== */
+input[type="file"]::file-selector-button {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 8px 0 0 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+    input[type="file"]::file-selector-button:hover {
+        background-color: var(--color-primary-hover);
+    }
+
+input[type="file"] {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+    input[type="file"]:focus {
+        outline: none;
+        border-color: var(--color-primary);
+    }
+
+/* ========================================
+   MENSAJES DE ALERTA
+   ======================================== */
+.alert-success-custom {
+    background-color: var(--color-success-bg);
+    border: 2px solid var(--color-success);
+    color: var(--color-success-dark);
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.alert-error-custom {
+    background-color: var(--color-error-bg);
+    border: 2px solid var(--color-error);
+    color: var(--color-error-dark);
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ========================================
+   ICONOS SVG
+   ======================================== */
+.icon-primary {
+    color: var(--color-primary);
+    width: 24px;
+    height: 24px;
+}
+
+.icon-success {
+    color: var(--color-success);
+    width: 24px;
+    height: 24px;
+}
+
+.icon-error {
+    color: var(--color-error);
+    width: 24px;
+    height: 24px;
+}
+
+/* ========================================
+   CARDS Y CONTENEDORES
+   ======================================== */
+.card-custom {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.info-box {
+    background-color: var(--color-primary-light);
+    border-left: 4px solid var(--color-primary);
+    padding: 16px;
+    border-radius: 4px;
+    display: flex;
+    gap: 12px;
+}
+
+/* ========================================
+   FORMULARIOS
+   ======================================== */
+.form-label-custom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--color-gray-700);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-input-custom {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+    .form-input-custom:focus {
+        outline: none;
+        border-color: var(--color-primary);
+    }
+
+/* ========================================
+   UTILIDADES
+   ======================================== */
+.shadow-custom {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.rounded-custom {
+    border-radius: 12px;
+}
+
+.transition-custom {
+    transition: all 0.2s ease-in-out;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+    .card-custom {
+        padding: 16px;
+    }
+
+    .btn-primary-custom {
+        width: 100%;
+    }
+}

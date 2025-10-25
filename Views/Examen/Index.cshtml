@@ -1,0 +1,61 @@
+@model List<(int Id, string Titulo)>
+
+@{
+    ViewData["Title"] = "Seleccionar Examen";
+}
+
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Selecciona un Examen</h1>
+            <p class="text-lg text-gray-600">Elige el examen que deseas realizar</p>
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-xl text-gray-600 mb-4">No hay exámenes disponibles</p>
+                <a href="@Url.Action("Index", "Carga")" class="inline-block bg-[#2f6cd6] text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    Cargar Exámenes
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var examen in Model)
+                {
+                    <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-[#2f6cd6]">
+                        <a href="@Url.Action("Iniciar", new { id = examen.Id })" class="block p-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-[#2f6cd6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-gray-800">@examen.Titulo</h3>
+                                        <p class="text-sm text-gray-500">Haz clic para comenzar</p>
+                                    </div>
+                                </div>
+                                <svg class="w-6 h-6 text-[#2f6cd6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="mt-8 text-center">
+            <a href="@Url.Action("Index", "Home")" class="inline-block text-[#2f6cd6] hover:text-blue-700 font-medium">
+                ← Volver al inicio
+            </a>
+        </div>
+    </div>
+</div>

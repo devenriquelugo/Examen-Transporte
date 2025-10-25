@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Examen Finalizado";
+}
+
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-12 text-center">
+        <div class="mb-8">
+            <svg class="w-24 h-24 text-[#8cf26a] mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+        </div>
+
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">¡Examen Finalizado!</h1>
+        <p class="text-xl text-gray-600 mb-8">Has completado todas las preguntas del examen</p>
+
+        <div class="space-y-4">
+            <a href="@Url.Action("Index", "Examen")"
+               class="block w-full bg-[#2f6cd6] text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                Ver Exámenes Disponibles
+            </a>
+
+            <a href="@Url.Action("Historial", "Examen")"
+               class="block w-full bg-gray-500 text-white py-4 rounded-lg font-semibold hover:bg-gray-600 transition-colors">
+                Ver Mi Historial
+            </a>
+
+            <a href="@Url.Action("Index", "Home")"
+               class="block w-full border-2 border-gray-300 text-gray-700 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                Volver al Inicio
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,60 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="min-h-[calc(100vh-16rem)] flex items-center justify-center px-4">
+    <div class="max-w-2xl w-full">
+        <div class="space-y-6">
+            <!-- Botón Responder Examen -->
+            <a href="@Url.Action("Index", "Examen")" class="block group">
+                <div class="bg-white rounded-2xl border-4 border-[#2f6cd6] p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-[#8cf26a] cursor-pointer">
+                    <div class="flex items-center space-x-6">
+                        <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-50 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors flex-shrink-0">
+                            <svg class="w-10 h-10 md:w-12 md:h-12 text-[#2f6cd6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 text-left">
+                            <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">Responder Examen</h2>
+                            <p class="text-sm md:text-base text-gray-600">Realiza un nuevo examen de transporte</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Botón Historial Examen -->
+            <a href="/Examen" class="block group">
+                <div class="bg-white rounded-2xl border-4 border-[#2f6cd6] p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-[#8cf26a] cursor-pointer">
+                    <div class="flex items-center space-x-6">
+                        <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-50 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors flex-shrink-0">
+                            <svg class="w-10 h-10 md:w-12 md:h-12 text-[#2f6cd6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 text-left">
+                            <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">Historial Examen</h2>
+                            <p class="text-sm md:text-base text-gray-600">Revisa tus exámenes anteriores</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Botón Crear Examen -->
+            <a href="/Carga" class="block group">
+                <div class="bg-white rounded-2xl border-4 border-[#2f6cd6] p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-[#8cf26a] cursor-pointer">
+                    <div class="flex items-center space-x-6">
+                        <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-50 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors flex-shrink-0">
+                            <svg class="w-10 h-10 md:w-12 md:h-12 text-[#2f6cd6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 text-left">
+                            <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">Crear Examen</h2>
+                            <p class="text-sm md:text-base text-gray-600">Crea nuevas preguntas y exámenes</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
