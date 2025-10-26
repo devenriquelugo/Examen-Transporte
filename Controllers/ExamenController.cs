@@ -33,7 +33,8 @@ namespace ExamenTransporte.Controllers
                 ExamenId = id,
                 ExamenRealizadoId = examenRealizadoId,
                 PreguntaActual = 1,
-                RespuestasComprobadas = new Dictionary<int, bool>()
+                RespuestasComprobadas = new Dictionary<int, bool>(),
+                OpcionesSeleccionadas = new Dictionary<int, int>() // NUEVO
             };
 
             HttpContext.Session.SetString(SESSION_KEY, System.Text.Json.JsonSerializer.Serialize(sesion));
@@ -58,6 +59,20 @@ namespace ExamenTransporte.Controllers
                 return RedirectToAction("Finalizar");
             }
 
+            // NUEVO: Recuperar la opción seleccionada si existe
+            int? opcionSeleccionada = null;
+            if (sesion.OpcionesSeleccionadas.ContainsKey(sesion.PreguntaActual))
+            {
+                opcionSeleccionada = sesion.OpcionesSeleccionadas[sesion.PreguntaActual];
+            }
+
+            // NUEVO: Verificar si es correcta (si ya fue comprobada)
+            bool? esCorrecta = null;
+            if (sesion.RespuestasComprobadas.ContainsKey(sesion.PreguntaActual))
+            {
+                esCorrecta = sesion.RespuestasComprobadas[sesion.PreguntaActual];
+            }
+
             var modelo = new ExamenViewModel
             {
                 ExamenRealizadoId = sesion.ExamenRealizadoId,
@@ -67,7 +82,9 @@ namespace ExamenTransporte.Controllers
                 TotalPreguntas = _repository.ObtenerTotalPreguntas(sesion.ExamenId),
                 Pregunta = pregunta,
                 PuedeRetroceder = sesion.PreguntaActual > 1,
-                MostroRespuesta = sesion.RespuestasComprobadas.ContainsKey(sesion.PreguntaActual)
+                MostroRespuesta = sesion.RespuestasComprobadas.ContainsKey(sesion.PreguntaActual),
+                OpcionSeleccionada = opcionSeleccionada, // NUEVO
+                EsCorrecta = esCorrecta // NUEVO
             };
 
             return View(modelo);
@@ -93,6 +110,9 @@ namespace ExamenTransporte.Controllers
 
             // Marcar como comprobada
             sesion.RespuestasComprobadas[sesion.PreguntaActual] = esCorrecta;
+            // NUEVO: Guardar la opción seleccionada
+            sesion.OpcionesSeleccionadas[sesion.PreguntaActual] = opcionId;
+
             HttpContext.Session.SetString(SESSION_KEY, System.Text.Json.JsonSerializer.Serialize(sesion));
 
             var modelo = new ExamenViewModel
@@ -135,7 +155,7 @@ namespace ExamenTransporte.Controllers
 
         // Ir a pregunta siguiente
         [HttpPost]
-        public IActionResult Siguiente()
+        public IActionResult Siguiente(int? opcionId)
         {
             var sesionJson = HttpContext.Session.GetString(SESSION_KEY);
             if (string.IsNullOrEmpty(sesionJson))
@@ -144,6 +164,12 @@ namespace ExamenTransporte.Controllers
             }
 
             var sesion = System.Text.Json.JsonSerializer.Deserialize<SesionExamen>(sesionJson);
+
+            // NUEVO: Guardar la opción seleccionada (aunque no se haya comprobado)
+            if (opcionId.HasValue && opcionId.Value > 0)
+            {
+                sesion.OpcionesSeleccionadas[sesion.PreguntaActual] = opcionId.Value;
+            }
 
             int totalPreguntas = _repository.ObtenerTotalPreguntas(sesion.ExamenId);
 
@@ -159,11 +185,59 @@ namespace ExamenTransporte.Controllers
             }
         }
 
-        // Finalizar examen
-        public IActionResult Finalizar()
+        // Ver historial general
+        public IActionResult Historial()
         {
-            HttpContext.Session.Remove(SESSION_KEY);
-            return View();
+            var historial = _repository.ObtenerHistorialExamenes();
+            return View(historial);
+        }
+
+        // Ver intentos de un examen específico
+        public IActionResult IntentosExamen(int id)
+        {
+            var intentos = _repository.ObtenerIntentosExamen(id);
+            ViewBag.TituloExamen = _repository.ObtenerTituloExamen(id);
+            ViewBag.ExamenId = id;
+            return View(intentos);
+        }
+
+        // Ver detalle de un intento con filtro
+        public IActionResult DetalleIntento(int id, string filtro = "todas")
+        {
+            // PRIMERO: Obtener TODAS las respuestas para estadísticas correctas
+            var todasLasRespuestas = _repository.ObtenerRespuestasIntento(id, "todas");
+
+            // SEGUNDO: Obtener las respuestas filtradas para mostrar
+            var respuestasFiltradas = filtro == "todas"
+                ? todasLasRespuestas
+                : _repository.ObtenerRespuestasIntento(id, filtro);
+
+            var primerRespuesta = todasLasRespuestas.FirstOrDefault();
+
+            // Calcular estadísticas basadas en TODAS las respuestas (sin filtro)
+            int totalPreguntas = todasLasRespuestas.Count;
+            int correctas = todasLasRespuestas.Count(r => r.EsCorrecta);
+            int incorrectas = todasLasRespuestas.Count(r => !r.EsCorrecta);
+            double porcentaje = totalPreguntas > 0 ? Math.Round((double)correctas / totalPreguntas * 100, 2) : 0;
+
+            // Obtener ExamenId para poder volver
+            int examenId = _repository.ObtenerExamenIdPorIntento(id);
+
+            var modelo = new DetalleIntentoViewModel
+            {
+                ExamenRealizadoId = id,
+                ExamenId = examenId, // NUEVO: para poder volver
+                TituloExamen = _repository.ObtenerTituloExamenPorIntento(id),
+                FechaRealizacion = primerRespuesta?.FechaRespuesta ?? DateTime.Now,
+                TotalPreguntas = totalPreguntas, // Siempre el total real
+                Correctas = correctas, // Siempre el total real
+                Incorrectas = incorrectas, // Siempre el total real
+                Porcentaje = porcentaje, // Siempre el porcentaje real
+                Filtro = filtro,
+                Respuestas = respuestasFiltradas // Solo las filtradas para mostrar
+            };
+
+            return View(modelo);
         }
     }
 
@@ -174,5 +248,7 @@ namespace ExamenTransporte.Controllers
         public int ExamenRealizadoId { get; set; }
         public int PreguntaActual { get; set; }
         public Dictionary<int, bool> RespuestasComprobadas { get; set; }
+
+        public Dictionary<int, int> OpcionesSeleccionadas { get; set; }
     }
 }

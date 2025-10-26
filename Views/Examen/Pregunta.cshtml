@@ -122,8 +122,10 @@
                 }
 
                 <!-- Botón Siguiente -->
-                <form method="post" action="@Url.Action("Siguiente")">
+                <form method="post" action="@Url.Action("Siguiente")" id="formSiguiente">
+                    <input type="hidden" name="opcionId" id="opcionIdSiguiente" value="" />
                     <button type="submit"
+                            onclick="capturarSeleccion()"
                             class="px-8 py-3 bg-[#8cf26a] text-gray-800 rounded-lg font-semibold hover:bg-green-400 transition-colors flex items-center space-x-2">
                         <span>Siguiente</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +139,27 @@
 </div>
 
 <script>
-    function habilitarComprobar() {
-        document.getElementById('btnComprobar').disabled = false;
+     function habilitarComprobar() {
+        var btnComprobar = document.getElementById('btnComprobar');
+        if (btnComprobar) {
+            btnComprobar.disabled = false;
+        }
+    }
+
+    function capturarSeleccion() {
+        // Capturar la opción seleccionada antes de avanzar
+        var opciones = document.getElementsByName('opcionId');
+        var seleccionada = null;
+
+        for (var i = 0; i < opciones.length; i++) {
+            if (opciones[i].checked) {
+                seleccionada = opciones[i].value;
+                break;
+            }
+        }
+
+        if (seleccionada) {
+            document.getElementById('opcionIdSiguiente').value = seleccionada;
+        }
     }
 </script>

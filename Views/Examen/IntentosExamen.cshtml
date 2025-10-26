@@ -1,0 +1,110 @@
+@model List<ExamenTransporte.Models.IntentoExamenViewModel>
+
+@{
+    ViewData["Title"] = "Intentos del Examen";
+    var tituloExamen = ViewBag.TituloExamen;
+    var examenId = ViewBag.ExamenId;
+}
+
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
+    <div class="max-w-6xl mx-auto">
+        <div class="mb-8">
+            <a href="@Url.Action("Historial")" class="text-[#2f6cd6] hover:text-blue-700 font-medium flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver al Historial
+            </a>
+        </div>
+
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">@tituloExamen</h1>
+            <p class="text-lg text-gray-600">Intentos realizados: @Model.Count</p>
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+                <svg class="w-20 h-20 text-gray-400 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="text-2xl font-semibold text-gray-700 mb-4">No hay intentos</h3>
+                <p class="text-gray-600 mb-6">Aún no has realizado este examen</p>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var intento in Model)
+                {
+                    var colorBorde = intento.Porcentaje >= 80 ? "border-[#8cf26a]" :
+                    intento.Porcentaje >= 50 ? "border-yellow-400" :
+                    "border-[#f26a6a]";
+
+                    var colorFondo = intento.Porcentaje >= 80 ? "bg-green-50" :
+                    intento.Porcentaje >= 50 ? "bg-yellow-50" :
+                    "bg-red-50";
+
+                    <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border-l-8 @colorBorde">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-4 mb-4">
+                                    <div class="w-16 h-16 @colorFondo rounded-full flex items-center justify-center">
+                                        <span class="text-2xl font-bold text-gray-700">@intento.Porcentaje%</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-gray-800">
+                                            Intento del @intento.FechaRealizacion.ToString("dd/MM/yyyy")
+                                        </h3>
+                                        <p class="text-sm text-gray-600">
+                                            Hora: @intento.FechaRealizacion.ToString("HH:mm")
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-4 text-center">
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-gray-700">@intento.TotalPreguntas</div>
+                                        <div class="text-xs text-gray-600">Total</div>
+                                    </div>
+                                    <div class="bg-green-50 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-green-700">@intento.Correctas</div>
+                                        <div class="text-xs text-gray-600">Correctas</div>
+                                    </div>
+                                    <div class="bg-red-50 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-red-700">@intento.Incorrectas</div>
+                                        <div class="text-xs text-gray-600">Incorrectas</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col space-y-2 min-w-[200px]">
+                                <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "todas" })"
+                                   class="bg-[#2f6cd6] text-white text-center py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                                    Ver Todas
+                                </a>
+                                <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "correctas" })"
+                                   class="bg-[#8cf26a] text-gray-800 text-center py-3 px-4 rounded-lg hover:bg-green-400 transition-colors font-semibold">
+                                    Ver Correctas
+                                </a>
+                                <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "incorrectas" })"
+                                   class="bg-[#f26a6a] text-white text-center py-3 px-4 rounded-lg hover:bg-red-600 transition-colors font-semibold">
+                                    Ver Incorrectas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="mt-8 flex justify-between">
+            <a href="@Url.Action("Historial")" class="inline-block text-[#2f6cd6] hover:text-blue-700 font-medium text-lg">
+                ← Volver al Historial
+            </a>
+            <a href="@Url.Action("Iniciar", new { id = examenId })" class="inline-block bg-[#8cf26a] text-gray-800 px-6 py-3 rounded-lg hover:bg-green-400 transition-colors font-semibold">
+                Realizar de Nuevo
+            </a>
+        </div>
+    </div>
+</div>

@@ -247,5 +247,193 @@ namespace ExamenTransporte.Data
                 }
             }
         }
+
+        // ========== MÉTODOS PARA HISTORIAL ==========
+
+        public List<HistorialExamenViewModel> ObtenerHistorialExamenes()
+        {
+            var historial = new List<HistorialExamenViewModel>();
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string query = @"
+            SELECT 
+                e.Id AS ExamenId,
+                e.Titulo,
+                COUNT(DISTINCT er.Id) AS TotalIntentos,
+                MAX(er.FechaInicio) AS UltimoIntento
+            FROM Examenes e
+            INNER JOIN ExamenesRealizados er ON e.Id = er.ExamenId
+            GROUP BY e.Id, e.Titulo
+            ORDER BY MAX(er.FechaInicio) DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        historial.Add(new HistorialExamenViewModel
+                        {
+                            ExamenId = reader.GetInt32(0),
+                            TituloExamen = reader.GetString(1),
+                            TotalIntentos = reader.GetInt32(2),
+                            UltimoIntento = reader.GetDateTime(3)
+                        });
+                    }
+                }
+            }
+
+            return historial;
+        }
+
+        public List<IntentoExamenViewModel> ObtenerIntentosExamen(int examenId)
+        {
+            var intentos = new List<IntentoExamenViewModel>();
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string query = @"
+            SELECT 
+                er.Id,
+                er.FechaInicio,
+                COUNT(r.Id) AS TotalPreguntas,
+                SUM(CASE WHEN r.EsCorrecta = 1 THEN 1 ELSE 0 END) AS Correctas,
+                SUM(CASE WHEN r.EsCorrecta = 0 THEN 1 ELSE 0 END) AS Incorrectas
+            FROM ExamenesRealizados er
+            LEFT JOIN Respuestas r ON er.Id = r.ExamenRealizadoId
+            WHERE er.ExamenId = @ExamenId
+            GROUP BY er.Id, er.FechaInicio
+            ORDER BY er.FechaInicio DESC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenId", examenId);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int totalPreguntas = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+                            int correctas = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
+                            int incorrectas = reader.IsDBNull(4) ? 0 : reader.GetInt32(4);
+
+                            double porcentaje = totalPreguntas > 0 ? (double)correctas / totalPreguntas * 100 : 0;
+
+                            intentos.Add(new IntentoExamenViewModel
+                            {
+                                ExamenRealizadoId = reader.GetInt32(0),
+                                FechaRealizacion = reader.GetDateTime(1),
+                                TotalPreguntas = totalPreguntas,
+                                Correctas = correctas,
+                                Incorrectas = incorrectas,
+                                Porcentaje = Math.Round(porcentaje, 2)
+                            });
+                        }
+                    }
+                }
+            }
+
+            return intentos;
+        }
+
+        public List<RespuestaDetalleViewModel> ObtenerRespuestasIntento(int examenRealizadoId, string filtro = "todas")
+        {
+            var respuestas = new List<RespuestaDetalleViewModel>();
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string query = @"
+            SELECT 
+                p.OrdenPregunta,
+                p.TextoPregunta,
+                o.TextoOpcion AS RespuestaUsuario,
+                r.EsCorrecta,
+                oc.TextoOpcion AS RespuestaCorrecta,
+                r.FechaRespuesta
+            FROM Respuestas r
+            INNER JOIN Preguntas p ON r.PreguntaId = p.Id
+            INNER JOIN Opciones o ON r.OpcionSeleccionadaId = o.Id
+            INNER JOIN Opciones oc ON p.Id = oc.PreguntaId AND oc.EsCorrecta = 1
+            WHERE r.ExamenRealizadoId = @ExamenRealizadoId";
+
+                // Aplicar filtro
+                if (filtro == "correctas")
+                {
+                    query += " AND r.EsCorrecta = 1";
+                }
+                else if (filtro == "incorrectas")
+                {
+                    query += " AND r.EsCorrecta = 0";
+                }
+
+                query += " ORDER BY p.OrdenPregunta";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            respuestas.Add(new RespuestaDetalleViewModel
+                            {
+                                NumeroPregunta = reader.GetInt32(0),
+                                TextoPregunta = reader.GetString(1),
+                                RespuestaUsuario = reader.GetString(2),
+                                EsCorrecta = reader.GetBoolean(3),
+                                RespuestaCorrecta = reader.GetString(4),
+                                FechaRespuesta = reader.GetDateTime(5)
+                            });
+                        }
+                    }
+                }
+            }
+
+            return respuestas;
+        }
+
+        public string ObtenerTituloExamenPorIntento(int examenRealizadoId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string query = @"
+            SELECT e.Titulo 
+            FROM ExamenesRealizados er
+            INNER JOIN Examenes e ON er.ExamenId = e.Id
+            WHERE er.Id = @ExamenRealizadoId";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                    return cmd.ExecuteScalar()?.ToString() ?? "Examen";
+                }
+            }
+        }
+
+        public int ObtenerExamenIdPorIntento(int examenRealizadoId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string query = "SELECT ExamenId FROM ExamenesRealizados WHERE Id = @ExamenRealizadoId";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? (int)result : 0;
+                }
+            }
+        }
     }
 }
