@@ -22,10 +22,14 @@
             </div>
 
             <!-- Estadísticas -->
-            <div class="grid grid-cols-3 gap-4 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold text-[#2f6cd6]">@Model.TotalPreguntasExamen</div>
+                    <div class="text-sm text-gray-600">Total Examen</div>
+                </div>
                 <div class="bg-gray-50 rounded-lg p-4 text-center">
-                    <div class="text-3xl font-bold text-gray-700">@Model.TotalPreguntas</div>
-                    <div class="text-sm text-gray-600">Total Preguntas</div>
+                    <div class="text-3xl font-bold text-gray-700">@Model.Respondidas</div>
+                    <div class="text-sm text-gray-600">Respondidas</div>
                 </div>
                 <div class="bg-green-50 rounded-lg p-4 text-center">
                     <div class="text-3xl font-bold text-green-700">@Model.Correctas</div>
@@ -35,13 +39,17 @@
                     <div class="text-3xl font-bold text-red-700">@Model.Incorrectas</div>
                     <div class="text-sm text-gray-600">Incorrectas</div>
                 </div>
+                <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold text-yellow-700">@(Model.TotalPreguntasExamen - Model.Respondidas)</div>
+                    <div class="text-sm text-gray-600">Sin Responder</div>
+                </div>
             </div>
 
             <!-- Filtros -->
             <div class="flex gap-2">
                 <a href="@Url.Action("DetalleIntento", new { id = Model.ExamenRealizadoId, filtro = "todas" })"
                    class="px-4 py-2 rounded-lg font-semibold transition-colors @(Model.Filtro == "todas" ? "bg-[#2f6cd6] text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300")">
-                    Todas (@(Model.Correctas + Model.Incorrectas))
+                    Todas (@Model.Respondidas)
                 </a>
                 <a href="@Url.Action("DetalleIntento", new { id = Model.ExamenRealizadoId, filtro = "correctas" })"
                    class="px-4 py-2 rounded-lg font-semibold transition-colors @(Model.Filtro == "correctas" ? "bg-[#8cf26a] text-gray-800" : "bg-gray-200 text-gray-700 hover:bg-gray-300")">
@@ -78,8 +86,10 @@
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                         </svg>
                                         <div>
-                                            <div class="font-semibold text-green-700">Tu respuesta (Correcta):</div>
-                                            <div class="text-gray-700">@respuesta.RespuestaUsuario</div>
+                                            <div class="font-semibold text-green-700 mb-1">Tu respuesta (Correcta):</div>
+                                            <div class="text-gray-700">
+                                                <span class="font-bold text-green-700 text-lg">@respuesta.LetraUsuario)</span> @respuesta.RespuestaUsuario
+                                            </div>
                                         </div>
                                     }
                                     else
@@ -89,10 +99,14 @@
                                         </svg>
                                         <div class="flex-1">
                                             <div class="font-semibold text-red-700 mb-2">Tu respuesta (Incorrecta):</div>
-                                            <div class="text-gray-700 mb-3">@respuesta.RespuestaUsuario</div>
+                                            <div class="text-gray-700 mb-3 bg-red-50 p-3 rounded-lg">
+                                                <span class="font-bold text-red-700 text-lg">@respuesta.LetraUsuario)</span> @respuesta.RespuestaUsuario
+                                            </div>
 
                                             <div class="font-semibold text-green-700 mb-2">Respuesta correcta:</div>
-                                            <div class="text-gray-700 bg-green-50 p-3 rounded-lg">@respuesta.RespuestaCorrecta</div>
+                                            <div class="text-gray-700 bg-green-50 p-3 rounded-lg">
+                                                <span class="font-bold text-green-700 text-lg">@respuesta.LetraCorrecta)</span> @respuesta.RespuestaCorrecta
+                                            </div>
                                         </div>
                                     }
                                 </div>

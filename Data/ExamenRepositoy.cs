@@ -219,16 +219,51 @@ namespace ExamenTransporte.Data
             {
                 conn.Open();
 
-                string query = @"INSERT INTO Respuestas (ExamenRealizadoId, PreguntaId, OpcionSeleccionadaId, EsCorrecta)
-                        VALUES (@ExamenRealizadoId, @PreguntaId, @OpcionId, @EsCorrecta)";
+                // Verificar si ya existe una respuesta para esta pregunta en este intento
+                string checkQuery = @"SELECT COUNT(*) FROM Respuestas 
+                             WHERE ExamenRealizadoId = @ExamenRealizadoId 
+                             AND PreguntaId = @PreguntaId";
 
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
-                    cmd.Parameters.AddWithValue("@PreguntaId", preguntaId);
-                    cmd.Parameters.AddWithValue("@OpcionId", opcionId);
-                    cmd.Parameters.AddWithValue("@EsCorrecta", esCorrecta);
-                    cmd.ExecuteNonQuery();
+                    checkCmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                    checkCmd.Parameters.AddWithValue("@PreguntaId", preguntaId);
+
+                    int count = (int)checkCmd.ExecuteScalar();
+
+                    if (count > 0)
+                    {
+                        // Ya existe, actualizar en lugar de insertar
+                        string updateQuery = @"UPDATE Respuestas 
+                                      SET OpcionSeleccionadaId = @OpcionId, 
+                                          EsCorrecta = @EsCorrecta,
+                                          FechaRespuesta = GETDATE()
+                                      WHERE ExamenRealizadoId = @ExamenRealizadoId 
+                                      AND PreguntaId = @PreguntaId";
+
+                        using (SqlCommand updateCmd = new SqlCommand(updateQuery, conn))
+                        {
+                            updateCmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                            updateCmd.Parameters.AddWithValue("@PreguntaId", preguntaId);
+                            updateCmd.Parameters.AddWithValue("@OpcionId", opcionId);
+                            updateCmd.Parameters.AddWithValue("@EsCorrecta", esCorrecta);
+                            updateCmd.ExecuteNonQuery();
+                        }
+                        return;
+                    }
+                }
+
+                // No existe, insertar nueva
+                string insertQuery = @"INSERT INTO Respuestas (ExamenRealizadoId, PreguntaId, OpcionSeleccionadaId, EsCorrecta)
+                              VALUES (@ExamenRealizadoId, @PreguntaId, @OpcionId, @EsCorrecta)";
+
+                using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
+                {
+                    insertCmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                    insertCmd.Parameters.AddWithValue("@PreguntaId", preguntaId);
+                    insertCmd.Parameters.AddWithValue("@OpcionId", opcionId);
+                    insertCmd.Parameters.AddWithValue("@EsCorrecta", esCorrecta);
+                    insertCmd.ExecuteNonQuery();
                 }
             }
         }
@@ -296,11 +331,21 @@ namespace ExamenTransporte.Data
             {
                 conn.Open();
 
+                // Primero obtener el total de preguntas del examen
+                string queryTotalPreguntas = "SELECT COUNT(*) FROM Preguntas WHERE ExamenId = @ExamenId";
+                int totalPreguntasExamen = 0;
+
+                using (SqlCommand cmdTotal = new SqlCommand(queryTotalPreguntas, conn))
+                {
+                    cmdTotal.Parameters.AddWithValue("@ExamenId", examenId);
+                    totalPreguntasExamen = (int)cmdTotal.ExecuteScalar();
+                }
+
                 string query = @"
             SELECT 
                 er.Id,
                 er.FechaInicio,
-                COUNT(r.Id) AS TotalPreguntas,
+                COUNT(r.Id) AS Respondidas,
                 SUM(CASE WHEN r.EsCorrecta = 1 THEN 1 ELSE 0 END) AS Correctas,
                 SUM(CASE WHEN r.EsCorrecta = 0 THEN 1 ELSE 0 END) AS Incorrectas
             FROM ExamenesRealizados er
@@ -317,17 +362,19 @@ namespace ExamenTransporte.Data
                     {
                         while (reader.Read())
                         {
-                            int totalPreguntas = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+                            int respondidas = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
                             int correctas = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
                             int incorrectas = reader.IsDBNull(4) ? 0 : reader.GetInt32(4);
 
-                            double porcentaje = totalPreguntas > 0 ? (double)correctas / totalPreguntas * 100 : 0;
+                            // Porcentaje sobre el total de preguntas del examen
+                            double porcentaje = totalPreguntasExamen > 0 ? (double)correctas / totalPreguntasExamen * 100 : 0;
 
                             intentos.Add(new IntentoExamenViewModel
                             {
                                 ExamenRealizadoId = reader.GetInt32(0),
                                 FechaRealizacion = reader.GetDateTime(1),
-                                TotalPreguntas = totalPreguntas,
+                                TotalPreguntasExamen = totalPreguntasExamen,
+                                Respondidas = respondidas,
                                 Correctas = correctas,
                                 Incorrectas = incorrectas,
                                 Porcentaje = Math.Round(porcentaje, 2)
@@ -352,8 +399,10 @@ namespace ExamenTransporte.Data
             SELECT 
                 p.OrdenPregunta,
                 p.TextoPregunta,
+                o.OrdenOpcion AS OrdenUsuario,
                 o.TextoOpcion AS RespuestaUsuario,
                 r.EsCorrecta,
+                oc.OrdenOpcion AS OrdenCorrecta,
                 oc.TextoOpcion AS RespuestaCorrecta,
                 r.FechaRespuesta
             FROM Respuestas r
@@ -380,16 +429,23 @@ namespace ExamenTransporte.Data
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
+                        var letras = new[] { "A", "B", "C", "D" };
+
                         while (reader.Read())
                         {
+                            int ordenUsuario = reader.GetInt32(2) - 1; // OrdenOpcion es 1-based, array es 0-based
+                            int ordenCorrecta = reader.GetInt32(5) - 1;
+
                             respuestas.Add(new RespuestaDetalleViewModel
                             {
                                 NumeroPregunta = reader.GetInt32(0),
                                 TextoPregunta = reader.GetString(1),
-                                RespuestaUsuario = reader.GetString(2),
-                                EsCorrecta = reader.GetBoolean(3),
-                                RespuestaCorrecta = reader.GetString(4),
-                                FechaRespuesta = reader.GetDateTime(5)
+                                LetraUsuario = letras[ordenUsuario], // NUEVO
+                                RespuestaUsuario = reader.GetString(3),
+                                EsCorrecta = reader.GetBoolean(4),
+                                LetraCorrecta = letras[ordenCorrecta], // NUEVO
+                                RespuestaCorrecta = reader.GetString(6),
+                                FechaRespuesta = reader.GetDateTime(7)
                             });
                         }
                     }

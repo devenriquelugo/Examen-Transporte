@@ -12,7 +12,8 @@
     {
         public int ExamenRealizadoId { get; set; }
         public DateTime FechaRealizacion { get; set; }
-        public int TotalPreguntas { get; set; }
+        public int TotalPreguntasExamen { get; set; } // NUEVO: Total de preguntas del examen
+        public int Respondidas { get; set; } // NUEVO: Preguntas respondidas
         public int Correctas { get; set; }
         public int Incorrectas { get; set; }
         public double Porcentaje { get; set; }
@@ -22,8 +23,10 @@
     {
         public int NumeroPregunta { get; set; }
         public string TextoPregunta { get; set; }
+        public string LetraUsuario { get; set; } // NUEVO
         public string RespuestaUsuario { get; set; }
         public bool EsCorrecta { get; set; }
+        public string LetraCorrecta { get; set; } // NUEVO
         public string RespuestaCorrecta { get; set; }
         public DateTime FechaRespuesta { get; set; }
     }
@@ -31,10 +34,11 @@
     public class DetalleIntentoViewModel
     {
         public int ExamenRealizadoId { get; set; }
-        public int ExamenId { get; set; } // NUEVO
+        public int ExamenId { get; set; }
         public string TituloExamen { get; set; }
         public DateTime FechaRealizacion { get; set; }
-        public int TotalPreguntas { get; set; }
+        public int TotalPreguntasExamen { get; set; } // NUEVO: Total de preguntas del examen
+        public int Respondidas { get; set; } // NUEVO: Preguntas respondidas
         public int Correctas { get; set; }
         public int Incorrectas { get; set; }
         public double Porcentaje { get; set; }

@@ -165,10 +165,27 @@ namespace ExamenTransporte.Controllers
 
             var sesion = System.Text.Json.JsonSerializer.Deserialize<SesionExamen>(sesionJson);
 
-            // NUEVO: Guardar la opción seleccionada (aunque no se haya comprobado)
+            // NUEVO: Guardar la opción seleccionada en sesión
             if (opcionId.HasValue && opcionId.Value > 0)
             {
                 sesion.OpcionesSeleccionadas[sesion.PreguntaActual] = opcionId.Value;
+
+                // NUEVO: Si NO se ha comprobado esta respuesta, guardarla en BD ahora
+                if (!sesion.RespuestasComprobadas.ContainsKey(sesion.PreguntaActual))
+                {
+                    var pregunta = _repository.ObtenerPregunta(sesion.ExamenId, sesion.PreguntaActual);
+
+                    if (pregunta != null)
+                    {
+                        bool esCorrecta = pregunta.OpcionCorrectaId == opcionId.Value;
+
+                        // Guardar en base de datos
+                        _repository.GuardarRespuesta(sesion.ExamenRealizadoId, pregunta.Id, opcionId.Value, esCorrecta);
+
+                        // Marcar como guardada (aunque no se haya "comprobado" visualmente)
+                        sesion.RespuestasComprobadas[sesion.PreguntaActual] = esCorrecta;
+                    }
+                }
             }
 
             int totalPreguntas = _repository.ObtenerTotalPreguntas(sesion.ExamenId);
@@ -214,27 +231,29 @@ namespace ExamenTransporte.Controllers
 
             var primerRespuesta = todasLasRespuestas.FirstOrDefault();
 
+            // Obtener ExamenId y total de preguntas
+            int examenId = _repository.ObtenerExamenIdPorIntento(id);
+            int totalPreguntasExamen = _repository.ObtenerTotalPreguntas(examenId);
+
             // Calcular estadísticas basadas en TODAS las respuestas (sin filtro)
-            int totalPreguntas = todasLasRespuestas.Count;
+            int respondidas = todasLasRespuestas.Count;
             int correctas = todasLasRespuestas.Count(r => r.EsCorrecta);
             int incorrectas = todasLasRespuestas.Count(r => !r.EsCorrecta);
-            double porcentaje = totalPreguntas > 0 ? Math.Round((double)correctas / totalPreguntas * 100, 2) : 0;
-
-            // Obtener ExamenId para poder volver
-            int examenId = _repository.ObtenerExamenIdPorIntento(id);
+            double porcentaje = totalPreguntasExamen > 0 ? Math.Round((double)correctas / totalPreguntasExamen * 100, 2) : 0;
 
             var modelo = new DetalleIntentoViewModel
             {
                 ExamenRealizadoId = id,
-                ExamenId = examenId, // NUEVO: para poder volver
+                ExamenId = examenId,
                 TituloExamen = _repository.ObtenerTituloExamenPorIntento(id),
                 FechaRealizacion = primerRespuesta?.FechaRespuesta ?? DateTime.Now,
-                TotalPreguntas = totalPreguntas, // Siempre el total real
-                Correctas = correctas, // Siempre el total real
-                Incorrectas = incorrectas, // Siempre el total real
-                Porcentaje = porcentaje, // Siempre el porcentaje real
+                TotalPreguntasExamen = totalPreguntasExamen,
+                Respondidas = respondidas,
+                Correctas = correctas,
+                Incorrectas = incorrectas,
+                Porcentaje = porcentaje,
                 Filtro = filtro,
-                Respuestas = respuestasFiltradas // Solo las filtradas para mostrar
+                Respuestas = respuestasFiltradas
             };
 
             return View(modelo);

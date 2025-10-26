@@ -62,10 +62,14 @@
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-3 gap-4 text-center">
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                                    <div class="bg-blue-50 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-[#2f6cd6]">@intento.TotalPreguntasExamen</div>
+                                        <div class="text-xs text-gray-600">Total Examen</div>
+                                    </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
-                                        <div class="text-2xl font-bold text-gray-700">@intento.TotalPreguntas</div>
-                                        <div class="text-xs text-gray-600">Total</div>
+                                        <div class="text-2xl font-bold text-gray-700">@intento.Respondidas</div>
+                                        <div class="text-xs text-gray-600">Respondidas</div>
                                     </div>
                                     <div class="bg-green-50 rounded-lg p-3">
                                         <div class="text-2xl font-bold text-green-700">@intento.Correctas</div>
@@ -74,6 +78,10 @@
                                     <div class="bg-red-50 rounded-lg p-3">
                                         <div class="text-2xl font-bold text-red-700">@intento.Incorrectas</div>
                                         <div class="text-xs text-gray-600">Incorrectas</div>
+                                    </div>
+                                    <div class="bg-yellow-50 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-yellow-700">@(intento.TotalPreguntasExamen - intento.Respondidas)</div>
+                                        <div class="text-xs text-gray-600">Sin Responder</div>
                                     </div>
                                 </div>
                             </div>
@@ -101,9 +109,6 @@
         <div class="mt-8 flex justify-between">
             <a href="@Url.Action("Historial")" class="inline-block text-[#2f6cd6] hover:text-blue-700 font-medium text-lg">
                 ← Volver al Historial
-            </a>
-            <a href="@Url.Action("Iniciar", new { id = examenId })" class="inline-block bg-[#8cf26a] text-gray-800 px-6 py-3 rounded-lg hover:bg-green-400 transition-colors font-semibold">
-                Realizar de Nuevo
             </a>
         </div>
     </div>
