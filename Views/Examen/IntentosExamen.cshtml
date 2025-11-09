@@ -17,6 +17,14 @@
             </a>
         </div>
 
+        <!-- Mensaje de error si existe -->
+        @if (TempData["Error"] != null)
+        {
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
+                <p class="font-medium">@TempData["Error"]</p>
+            </div>
+        }
+
         <div class="text-center mb-12">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">@tituloExamen</h1>
             <p class="text-lg text-gray-600">Intentos realizados: @Model.Count</p>
@@ -37,11 +45,16 @@
             <div class="space-y-4">
                 @foreach (var intento in Model)
                 {
-                    var colorBorde = intento.Porcentaje >= 80 ? "border-[#8cf26a]" :
+                    // Determinar si está completo
+                    var estaCompleto = intento.Respondidas >= intento.TotalPreguntasExamen;
+
+                    var colorBorde = !estaCompleto ? "border-yellow-400" :
+                    intento.Porcentaje >= 80 ? "border-[#8cf26a]" :
                     intento.Porcentaje >= 50 ? "border-yellow-400" :
                     "border-[#f26a6a]";
 
-                    var colorFondo = intento.Porcentaje >= 80 ? "bg-green-50" :
+                    var colorFondo = !estaCompleto ? "bg-yellow-50" :
+                    intento.Porcentaje >= 80 ? "bg-green-50" :
                     intento.Porcentaje >= 50 ? "bg-yellow-50" :
                     "bg-red-50";
 
@@ -50,7 +63,16 @@
                             <div class="flex-1">
                                 <div class="flex items-center space-x-4 mb-4">
                                     <div class="w-16 h-16 @colorFondo rounded-full flex items-center justify-center">
-                                        <span class="text-2xl font-bold text-gray-700">@intento.Porcentaje%</span>
+                                        @if (estaCompleto)
+                                        {
+                                            <span class="text-2xl font-bold text-gray-700">@intento.Porcentaje%</span>
+                                        }
+                                        else
+                                        {
+                                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        }
                                     </div>
                                     <div>
                                         <h3 class="text-xl font-bold text-gray-800">
@@ -59,6 +81,12 @@
                                         <p class="text-sm text-gray-600">
                                             Hora: @intento.FechaRealizacion.ToString("HH:mm")
                                         </p>
+                                        @if (!estaCompleto)
+                                        {
+                                            <span class="inline-block mt-1 bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                                                INCOMPLETO
+                                            </span>
+                                        }
                                     </div>
                                 </div>
 
@@ -87,18 +115,43 @@
                             </div>
 
                             <div class="flex flex-col space-y-2 min-w-[200px]">
-                                <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "todas" })"
-                                   class="bg-[#2f6cd6] text-white text-center py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
-                                    Ver Todas
-                                </a>
-                                <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "correctas" })"
-                                   class="bg-[#8cf26a] text-gray-800 text-center py-3 px-4 rounded-lg hover:bg-green-400 transition-colors font-semibold">
-                                    Ver Correctas
-                                </a>
-                                <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "incorrectas" })"
-                                   class="bg-[#f26a6a] text-white text-center py-3 px-4 rounded-lg hover:bg-red-600 transition-colors font-semibold">
-                                    Ver Incorrectas
-                                </a>
+                                @if (!estaCompleto)
+                                {
+                                    <!-- Botón Retomar para exámenes incompletos -->
+                                    <a href="@Url.Action("Retomar", new { examenRealizadoId = intento.ExamenRealizadoId })"
+                                       class="bg-[#8cf26a] text-gray-900 text-center py-3 px-4 rounded-lg hover:bg-green-400 transition-colors font-bold flex items-center justify-center">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Retomar Examen
+                                    </a>
+
+                                    <!-- Botón secundario para ver progreso actual -->
+                                    @if (intento.Respondidas > 0)
+                                    {
+                                        <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "todas" })"
+                                           class="bg-gray-200 text-gray-700 text-center py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm">
+                                            Ver Progreso Actual
+                                        </a>
+                                    }
+                                }
+                                else
+                                {
+                                    <!-- Botones normales para exámenes completos -->
+                                    <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "todas" })"
+                                       class="bg-[#2f6cd6] text-white text-center py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                                        Ver Todas
+                                    </a>
+                                    <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "correctas" })"
+                                       class="bg-[#8cf26a] text-gray-800 text-center py-3 px-4 rounded-lg hover:bg-green-400 transition-colors font-semibold">
+                                        Ver Correctas
+                                    </a>
+                                    <a href="@Url.Action("DetalleIntento", new { id = intento.ExamenRealizadoId, filtro = "incorrectas" })"
+                                       class="bg-[#f26a6a] text-white text-center py-3 px-4 rounded-lg hover:bg-red-600 transition-colors font-semibold">
+                                        Ver Incorrectas
+                                    </a>
+                                }
                             </div>
                         </div>
                     </div>

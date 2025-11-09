@@ -258,6 +258,82 @@ namespace ExamenTransporte.Controllers
 
             return View(modelo);
         }
+
+        // Retomar un examen incompleto
+        public IActionResult Retomar(int examenRealizadoId)
+        {
+            // Obtener el ExamenId del intento
+            int examenId = _repository.ObtenerExamenIdPorIntento(examenRealizadoId);
+
+            if (examenId == 0)
+            {
+                TempData["Error"] = "No se encontró el examen";
+                return RedirectToAction("Historial");
+            }
+
+            // Verificar si ya está completo
+            bool estaCompleto = _repository.ExamenEstaCompleto(examenRealizadoId, examenId);
+
+            if (estaCompleto)
+            {
+                TempData["Error"] = "Este examen ya ha sido completado";
+                return RedirectToAction("IntentosExamen", new { id = examenId });
+            }
+
+            // Obtener las respuestas ya guardadas
+            var opcionesSeleccionadas = _repository.ObtenerRespuestasGuardadas(examenRealizadoId, examenId);
+            var respuestasComprobadas = _repository.ObtenerRespuestasComprobadas(examenRealizadoId, examenId);
+
+            // Obtener la primera pregunta sin responder
+            int preguntaActual = _repository.ObtenerPrimeraPreguntaSinResponder(examenRealizadoId, examenId);
+
+            // Crear sesión con el estado guardado
+            var sesion = new SesionExamen
+            {
+                ExamenId = examenId,
+                ExamenRealizadoId = examenRealizadoId,
+                PreguntaActual = preguntaActual,
+                RespuestasComprobadas = respuestasComprobadas,
+                OpcionesSeleccionadas = opcionesSeleccionadas
+            };
+
+            HttpContext.Session.SetString(SESSION_KEY, System.Text.Json.JsonSerializer.Serialize(sesion));
+
+            return RedirectToAction("Pregunta");
+        }
+
+        public IActionResult Finalizar()
+        {
+            var sesionJson = HttpContext.Session.GetString(SESSION_KEY);
+            if (string.IsNullOrEmpty(sesionJson))
+            {
+                return RedirectToAction("Index");
+            }
+
+            var sesion = System.Text.Json.JsonSerializer.Deserialize<SesionExamen>(sesionJson);
+
+            // Calcular estadísticas
+            int totalPreguntas = _repository.ObtenerTotalPreguntas(sesion.ExamenId);
+            int correctas = sesion.RespuestasComprobadas.Count(r => r.Value == true);
+            int incorrectas = sesion.RespuestasComprobadas.Count(r => r.Value == false);
+            double porcentaje = totalPreguntas > 0 ? Math.Round((double)correctas / totalPreguntas * 100, 2) : 0;
+
+            var modelo = new ResultadoExamenViewModel
+            {
+                ExamenRealizadoId = sesion.ExamenRealizadoId,
+                TituloExamen = _repository.ObtenerTituloExamen(sesion.ExamenId),
+                TotalPreguntas = totalPreguntas,
+                Correctas = correctas,
+                Incorrectas = incorrectas,
+                Porcentaje = porcentaje,
+                Aprobado = porcentaje >= 70
+            };
+
+            // Limpiar sesión
+            HttpContext.Session.Remove(SESSION_KEY);
+
+            return View(modelo);
+        }
     }
 
     // Clase para guardar estado en sesión

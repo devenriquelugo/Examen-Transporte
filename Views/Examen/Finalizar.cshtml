@@ -1,33 +1,134 @@
+@model ExamenTransporte.Models.ResultadoExamenViewModel
+
 @{
-    ViewData["Title"] = "Examen Finalizado";
+    ViewData["Title"] = "Resultados del Examen";
 }
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4">
-    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-12 text-center">
-        <div class="mb-8">
-            <svg class="w-24 h-24 text-[#8cf26a] mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-            </svg>
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-12 px-4">
+    <div class="max-w-2xl w-full">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Header con resultado -->
+            <div class="@(Model.Aprobado ? "bg-gradient-to-r from-green-400 to-green-500" : "bg-gradient-to-r from-red-400 to-red-500") p-8 text-center text-white">
+                <div class="mb-4">
+                    @if (Model.Aprobado)
+                    {
+                        <svg class="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h1 class="text-4xl font-bold mb-2">¡Felicitaciones!</h1>
+                        <p class="text-xl">Has aprobado el examen</p>
+                    }
+                    else
+                    {
+                        <svg class="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h1 class="text-4xl font-bold mb-2">Sigue Intentando</h1>
+                        <p class="text-xl">No has alcanzado la nota mínima</p>
+                    }
+                </div>
+                <h2 class="text-2xl font-semibold">@Model.TituloExamen</h2>
+            </div>
+
+            <!-- Puntuación circular -->
+            <div class="p-8">
+                <div class="flex justify-center mb-8">
+                    <div class="relative w-48 h-48">
+                        <svg class="transform -rotate-90 w-48 h-48">
+                            <circle cx="96" cy="96" r="80" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                            <circle cx="96" cy="96" r="80"
+                                    stroke="@(Model.Aprobado ? "#8cf26a" : "#f26a6a")"
+                                    stroke-width="12"
+                                    fill="none"
+                                    stroke-dasharray="502.4"
+                                    stroke-dashoffset="@(502.4 * (1 - Model.Porcentaje / 100))"
+                                    stroke-linecap="round"
+                                    class="transition-all duration-1000" />
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center flex-col">
+                            <span class="text-5xl font-bold" style="color: @(Model.Aprobado ? "#8cf26a" : "#f26a6a")">
+                                @Model.Porcentaje%
+                            </span>
+                            <span class="text-gray-600 text-sm mt-1">Puntuación</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="grid grid-cols-3 gap-4 mb-8">
+                    <div class="text-center p-4 bg-blue-50 rounded-xl">
+                        <div class="text-3xl font-bold text-[#2f6cd6] mb-1">@Model.TotalPreguntas</div>
+                        <div class="text-sm text-gray-600">Total</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-xl">
+                        <div class="text-3xl font-bold text-green-600 mb-1">@Model.Correctas</div>
+                        <div class="text-sm text-gray-600">Correctas</div>
+                    </div>
+                    <div class="text-center p-4 bg-red-50 rounded-xl">
+                        <div class="text-3xl font-bold text-red-600 mb-1">@Model.Incorrectas</div>
+                        <div class="text-sm text-gray-600">Incorrectas</div>
+                    </div>
+                </div>
+
+                <!-- Información adicional -->
+                <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 font-medium">Porcentaje necesario:</span>
+                            <span class="font-bold text-gray-800">70%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 font-medium">Tu puntuación:</span>
+                            <span class="font-bold" style="color: @(Model.Aprobado ? "#8cf26a" : "#f26a6a")">
+                                @Model.Porcentaje%
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 font-medium">Estado:</span>
+                            <span class="font-bold px-3 py-1 rounded-full text-sm"
+                                  style="background-color: @(Model.Aprobado ? "rgba(140, 242, 106, 0.2)" : "rgba(242, 106, 106, 0.2)");
+                                         color: @(Model.Aprobado ? "#2f6cd6" : "#f26a6a")">
+                                @(Model.Aprobado ? "APROBADO" : "NO APROBADO")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="@Url.Action("DetalleIntento", "Examen", new { id = Model.ExamenRealizadoId })"
+                       class="bg-[#2f6cd6] text-white text-center py-4 rounded-xl hover:bg-blue-700 transition-colors font-semibold flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Ver Respuestas
+                    </a>
+                    <a href="@Url.Action("Index", "Examen")"
+                       class="bg-gray-200 text-gray-700 text-center py-4 rounded-xl hover:bg-gray-300 transition-colors font-semibold flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        Volver al Inicio
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <h1 class="text-4xl font-bold text-gray-800 mb-4">¡Examen Finalizado!</h1>
-        <p class="text-xl text-gray-600 mb-8">Has completado todas las preguntas del examen</p>
-
-        <div class="space-y-4">
-            <a href="@Url.Action("Index", "Examen")"
-               class="block w-full bg-[#2f6cd6] text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                Ver Exámenes Disponibles
-            </a>
-
-            <a href="@Url.Action("Historial", "Examen")"
-               class="block w-full bg-gray-500 text-white py-4 rounded-lg font-semibold hover:bg-gray-600 transition-colors">
-                Ver Mi Historial
-            </a>
-
-            <a href="@Url.Action("Index", "Home")"
-               class="block w-full border-2 border-gray-300 text-gray-700 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
-                Volver al Inicio
-            </a>
+        <!-- Mensaje motivacional -->
+        <div class="text-center mt-6">
+            @if (Model.Aprobado)
+            {
+                <p class="text-gray-600 text-lg">
+                    ¡Excelente trabajo! Revisa tus respuestas para reforzar tu conocimiento.
+                </p>
+            }
+            else
+            {
+                <p class="text-gray-600 text-lg">
+                    No te desanimes. Revisa las respuestas y vuelve a intentarlo.
+                </p>
+            }
         </div>
     </div>
 </div>

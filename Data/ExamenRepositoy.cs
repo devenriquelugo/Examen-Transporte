@@ -491,5 +491,144 @@ namespace ExamenTransporte.Data
                 }
             }
         }
+
+        // Verificar si un examen está completo
+        public bool ExamenEstaCompleto(int examenRealizadoId, int examenId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                // Obtener total de preguntas del examen
+                string queryTotal = "SELECT COUNT(*) FROM Preguntas WHERE ExamenId = @ExamenId";
+                int totalPreguntas;
+                using (SqlCommand cmd = new SqlCommand(queryTotal, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenId", examenId);
+                    totalPreguntas = (int)cmd.ExecuteScalar();
+                }
+
+                // Obtener cuántas fueron respondidas
+                string queryRespondidas = @"SELECT COUNT(*) FROM Respuestas 
+                                   WHERE ExamenRealizadoId = @ExamenRealizadoId";
+                int respondidas;
+                using (SqlCommand cmd = new SqlCommand(queryRespondidas, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                    respondidas = (int)cmd.ExecuteScalar();
+                }
+
+                return respondidas >= totalPreguntas;
+            }
+        }
+
+        // Obtener respuestas ya guardadas para un intento
+        public Dictionary<int, int> ObtenerRespuestasGuardadas(int examenRealizadoId, int examenId)
+        {
+            var respuestas = new Dictionary<int, int>(); // <NumeroPregunta, OpcionId>
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string query = @"SELECT p.OrdenPregunta, r.OpcionSeleccionadaId, r.EsCorrecta
+                        FROM Respuestas r
+                        INNER JOIN Preguntas p ON r.PreguntaId = p.Id
+                        WHERE r.ExamenRealizadoId = @ExamenRealizadoId
+                        AND p.ExamenId = @ExamenId
+                        ORDER BY p.OrdenPregunta";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                    cmd.Parameters.AddWithValue("@ExamenId", examenId);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int numeroPregunta = reader.GetInt32(0);
+                            int opcionId = reader.GetInt32(1);
+                            respuestas[numeroPregunta] = opcionId;
+                        }
+                    }
+                }
+            }
+
+            return respuestas;
+        }
+
+        // Obtener las respuestas comprobadas (para RespuestasComprobadas)
+        public Dictionary<int, bool> ObtenerRespuestasComprobadas(int examenRealizadoId, int examenId)
+        {
+            var respuestas = new Dictionary<int, bool>(); // <NumeroPregunta, EsCorrecta>
+
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string query = @"SELECT p.OrdenPregunta, r.EsCorrecta
+                        FROM Respuestas r
+                        INNER JOIN Preguntas p ON r.PreguntaId = p.Id
+                        WHERE r.ExamenRealizadoId = @ExamenRealizadoId
+                        AND p.ExamenId = @ExamenId
+                        ORDER BY p.OrdenPregunta";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+                    cmd.Parameters.AddWithValue("@ExamenId", examenId);
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int numeroPregunta = reader.GetInt32(0);
+                            bool esCorrecta = reader.GetBoolean(1);
+                            respuestas[numeroPregunta] = esCorrecta;
+                        }
+                    }
+                }
+            }
+
+            return respuestas;
+        }
+
+        // Obtener el número de la primera pregunta sin responder
+        public int ObtenerPrimeraPreguntaSinResponder(int examenRealizadoId, int examenId)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                // Obtener todas las preguntas del examen
+                string query = @"SELECT p.OrdenPregunta
+                        FROM Preguntas p
+                        WHERE p.ExamenId = @ExamenId
+                        AND p.OrdenPregunta NOT IN (
+                            SELECT p2.OrdenPregunta
+                            FROM Respuestas r
+                            INNER JOIN Preguntas p2 ON r.PreguntaId = p2.Id
+                            WHERE r.ExamenRealizadoId = @ExamenRealizadoId
+                        )
+                        ORDER BY p.OrdenPregunta";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ExamenId", examenId);
+                    cmd.Parameters.AddWithValue("@ExamenRealizadoId", examenRealizadoId);
+
+                    var result = cmd.ExecuteScalar();
+
+                    // Si todas están respondidas, retornar el total de preguntas (última pregunta)
+                    if (result == null)
+                    {
+                        return ObtenerTotalPreguntas(examenId);
+                    }
+
+                    return (int)result;
+                }
+            }
+        }
     }
 }
