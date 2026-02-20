@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ExamenTransporte.Data;
 using ExamenTransporte.Models;
-using ExamenTransporte.Data;
+using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using System.Text.RegularExpressions;
 using Xceed.Words.NET;
 
@@ -20,28 +21,32 @@ namespace ExamenTransporte.Controllers
             return View(new CargaExamenViewModel());
         }
 
+        // ============================================
+        // MODELO 1: 2 archivos (CÓDIGO EXISTENTE)
+        // ============================================
         [HttpPost]
-        public async Task<IActionResult> CargarArchivos(CargaExamenViewModel model)
+        public async Task<IActionResult> CargarArchivosModelo1(CargaExamenViewModel model)
         {
             if (model.ArchivoExamen == null || model.ArchivoRespuestas == null)
             {
                 model.Mensaje = "Debe seleccionar ambos archivos .docx";
                 model.Exito = false;
+                model.ModeloCarga = 1;
                 return View("Index", model);
             }
 
             try
             {
-                Console.WriteLine("\n========== INICIANDO CARGA DE EXAMEN ==========");
+                Console.WriteLine("\n========== INICIANDO CARGA MODELO 1 ==========");
                 Console.WriteLine($"Archivo examen: {model.ArchivoExamen.FileName}");
                 Console.WriteLine($"Archivo respuestas: {model.ArchivoRespuestas.FileName}");
 
                 Console.WriteLine("\n--- PASO 1: Procesando archivo de preguntas ---");
-                var datosExamen = await ProcesarArchivoExamen(model.ArchivoExamen);
+                var datosExamen = await ProcesarArchivoExamenModelo1(model.ArchivoExamen);
                 Console.WriteLine($"✓ Examen procesado: '{datosExamen.Titulo}' con {datosExamen.Preguntas.Count} preguntas");
 
                 Console.WriteLine("\n--- PASO 2: Procesando archivo de respuestas ---");
-                var respuestas = await ProcesarArchivoRespuestas(model.ArchivoRespuestas);
+                var respuestas = await ProcesarArchivoRespuestasModelo1(model.ArchivoRespuestas);
                 Console.WriteLine($"✓ Respuestas procesadas: {respuestas.Count}");
 
                 Console.WriteLine("\n--- PASO 3: Guardando en base de datos ---");
@@ -66,9 +71,7 @@ namespace ExamenTransporte.Controllers
                     {
                         Console.WriteLine($"✗ Error guardando pregunta {pregunta.Numero}:");
                         Console.WriteLine($"  Mensaje: {exPregunta.Message}");
-                        Console.WriteLine($"  Tipo: {exPregunta.GetType().FullName}");
-                        Console.WriteLine($"  Stack: {exPregunta.StackTrace}");
-                        throw; // Re-lanzar para detener el proceso
+                        throw;
                     }
                 }
 
@@ -77,339 +80,711 @@ namespace ExamenTransporte.Controllers
 
                 model.Mensaje = $"Examen '{datosExamen.Titulo}' cargado correctamente con {datosExamen.Preguntas.Count} preguntas";
                 model.Exito = true;
+                model.ModeloCarga = 1;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"\n✗✗✗ ERROR CRÍTICO ✗✗✗");
                 Console.WriteLine($"Mensaje: {ex.Message}");
-                Console.WriteLine($"Tipo completo: {ex.GetType().FullName}");
-                Console.WriteLine($"Stack trace completo:");
-                Console.WriteLine(ex.StackTrace);
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
 
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"\n--- Inner Exception ---");
-                    Console.WriteLine($"Mensaje: {ex.InnerException.Message}");
-                    Console.WriteLine($"Tipo: {ex.InnerException.GetType().FullName}");
-                    Console.WriteLine($"Stack: {ex.InnerException.StackTrace}");
-                }
-
-                model.Mensaje = $"Error: {ex.Message} (Ver consola para detalles)";
+                model.Mensaje = $"Error: {ex.Message}";
                 model.Exito = false;
+                model.ModeloCarga = 1;
             }
 
             return View("Index", model);
         }
 
-        private async Task<DatosExamen> ProcesarArchivoExamen(IFormFile archivo)
+        // ============================================
+        // MODELO 2: 1 archivo completo (NUEVO)
+        // ============================================
+        [HttpPost]
+        public async Task<IActionResult> CargarArchivoModelo2(CargaExamenViewModel model)
+        {
+            if (model.ArchivoCompleto == null)
+            {
+                model.Mensaje = "Debe seleccionar un archivo .docx";
+                model.Exito = false;
+                model.ModeloCarga = 2;
+                return View("Index", model);
+            }
+
+            try
+            {
+                Console.WriteLine("\n========== INICIANDO CARGA MODELO 2 ==========");
+                Console.WriteLine($"Archivo: {model.ArchivoCompleto.FileName}");
+
+                Console.WriteLine("\n--- PASO 1: Procesando archivo completo ---");
+                var datosExamen = await ProcesarArchivoCompletoModelo2(model.ArchivoCompleto);
+                Console.WriteLine($"✓ Examen procesado: '{datosExamen.Titulo}' con {datosExamen.Preguntas.Count} preguntas");
+
+                Console.WriteLine("\n--- PASO 2: Guardando en base de datos ---");
+                int examenId = _repository.GuardarExamen(datosExamen.Titulo);
+                Console.WriteLine($"✓ Examen guardado con ID: {examenId}");
+
+                int preguntasGuardadas = 0;
+                foreach (var pregunta in datosExamen.Preguntas)
+                {
+                    try
+                    {
+                        Console.WriteLine($"\nGuardando pregunta {pregunta.Numero} (respuesta correcta: '{pregunta.RespuestaCorrecta}')...");
+                        _repository.GuardarPregunta(examenId, pregunta, pregunta.RespuestaCorrecta);
+                        preguntasGuardadas++;
+                        Console.WriteLine($"  ✓ Guardada correctamente");
+                    }
+                    catch (Exception exPregunta)
+                    {
+                        Console.WriteLine($"✗ Error guardando pregunta {pregunta.Numero}:");
+                        Console.WriteLine($"  Mensaje: {exPregunta.Message}");
+                        throw;
+                    }
+                }
+
+                Console.WriteLine($"\n✓ Total preguntas guardadas: {preguntasGuardadas}");
+                Console.WriteLine("========== CARGA COMPLETADA ==========\n");
+
+                model.Mensaje = $"Examen '{datosExamen.Titulo}' cargado correctamente con {datosExamen.Preguntas.Count} preguntas";
+                model.Exito = true;
+                model.ModeloCarga = 2;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n✗✗✗ ERROR CRÍTICO ✗✗✗");
+                Console.WriteLine($"Mensaje: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+
+                model.Mensaje = $"Error: {ex.Message}";
+                model.Exito = false;
+                model.ModeloCarga = 2;
+            }
+
+            return View("Index", model);
+        }
+
+        // ============================================
+        // MÉTODOS DE PROCESAMIENTO MODELO 1
+        // ============================================
+
+        private async Task<DatosExamen> ProcesarArchivoExamenModelo1(IFormFile archivo)
         {
             var resultado = new DatosExamen();
 
+            // Leer contenido como texto plano
+            string textoCompleto;
             using (var stream = archivo.OpenReadStream())
+            using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
-                using (var doc = DocX.Load(stream))
+                textoCompleto = await reader.ReadToEndAsync();
+            }
+
+            textoCompleto = textoCompleto.Replace("\0", "");
+            Console.WriteLine($"Longitud del texto: {textoCompleto.Length} caracteres");
+
+            // Título del archivo
+            resultado.Titulo = Path.GetFileNameWithoutExtension(archivo.FileName).Trim();
+            if (resultado.Titulo.Length > 200)
+            {
+                resultado.Titulo = resultado.Titulo.Substring(0, 200);
+            }
+
+            Console.WriteLine($"Título extraído: '{resultado.Titulo}'");
+
+            // Patrón de preguntas del modelo 1
+            var patronPreguntas = @"(?:\d+\.?\s*-?\s*)?Pregunta:\s*(.+?)(?=(?:\d+\.?\s*-?\s*)?Pregunta:|$)";
+            var matchesPreguntas = Regex.Matches(textoCompleto, patronPreguntas, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            Console.WriteLine($"Bloques encontrados: {matchesPreguntas.Count}");
+
+            int numeroPreguntaReal = 1;
+
+            foreach (Match matchPregunta in matchesPreguntas)
+            {
+                try
                 {
-                    string textoCompleto = doc.Text;
+                    string bloqueCompleto = matchPregunta.Groups[1].Value;
 
-                    Console.WriteLine($"Longitud del texto: {textoCompleto.Length} caracteres");
-                    Console.WriteLine($"Primeras 500 caracteres:\n{textoCompleto.Substring(0, Math.Min(500, textoCompleto.Length))}");
-
-                    // USAR NOMBRE DEL ARCHIVO COMO TÍTULO (sin extensión)
-                    resultado.Titulo = Path.GetFileNameWithoutExtension(archivo.FileName);
-
-                    // Limpiar el título: remover extensiones comunes y espacios extras
-                    resultado.Titulo = resultado.Titulo.Trim();
-
-                    if (resultado.Titulo.Length > 200)
+                    var preguntaData = new PreguntaData
                     {
-                        resultado.Titulo = resultado.Titulo.Substring(0, 200);
+                        Numero = numeroPreguntaReal,
+                        Texto = "",
+                        Opciones = new Dictionary<string, string>()
+                    };
+
+                    // Extraer texto de la pregunta
+                    var matchInicioOpciones = Regex.Match(bloqueCompleto, @"^(.+?[?.:!])\s*(?<![A-Za-z])A[\s:]", RegexOptions.Singleline);
+
+                    if (matchInicioOpciones.Success)
+                    {
+                        preguntaData.Texto = matchInicioOpciones.Groups[1].Value.Trim();
                     }
-
-                    Console.WriteLine($"Título extraído del nombre del archivo: '{resultado.Titulo}'");
-
-                    // EXTRAER PREGUNTAS - PATRÓN UNIVERSAL
-                    var patronPreguntas = @"(?:\d+\.?\s*-?\s*)?Pregunta:\s*(.+?)(?=(?:\d+\.?\s*-?\s*)?Pregunta:|$)";
-                    var matchesPreguntas = Regex.Matches(textoCompleto, patronPreguntas, RegexOptions.Singleline);
-
-                    Console.WriteLine($"Bloques de preguntas encontrados: {matchesPreguntas.Count}");
-
-                    int numeroPreguntaReal = 1;
-
-                    foreach (Match matchPregunta in matchesPreguntas)
+                    else
                     {
-                        try
+                        var matchPlanB = Regex.Match(bloqueCompleto, @"^(.+?)(?<![A-Za-z])A[\s:]", RegexOptions.Singleline);
+                        if (matchPlanB.Success)
                         {
-                            Console.WriteLine($"\n=== Procesando Pregunta {numeroPreguntaReal} ===");
-
-                            string bloqueCompleto = matchPregunta.Groups[1].Value;
-
-                            // Solo mostrar log detallado para las primeras 5 preguntas
-                            if (numeroPreguntaReal <= 5)
-                            {
-                                Console.WriteLine($"Bloque completo (primeros 200 chars): {bloqueCompleto.Substring(0, Math.Min(200, bloqueCompleto.Length))}...");
-                            }
-
-                            var preguntaData = new PreguntaData
-                            {
-                                Numero = numeroPreguntaReal,
-                                Texto = "",
-                                Opciones = new Dictionary<string, string>()
-                            };
-
-                            // PASO 1: Extraer texto de la pregunta
-                            var matchInicioOpciones = Regex.Match(bloqueCompleto, @"^(.+?[?.:!])\s*(?<![A-Za-z])A\s+", RegexOptions.Singleline);
-
-                            if (matchInicioOpciones.Success)
-                            {
-                                preguntaData.Texto = matchInicioOpciones.Groups[1].Value.Trim();
-                                if (numeroPreguntaReal <= 5)
-                                {
-                                    Console.WriteLine($"✓ Texto extraído: {preguntaData.Texto.Substring(0, Math.Min(80, preguntaData.Texto.Length))}...");
-                                }
-                            }
-                            else
-                            {
-                                var matchPlanB = Regex.Match(bloqueCompleto, @"^(.+?)(?<![A-Za-z])A\s+", RegexOptions.Singleline);
-
-                                if (matchPlanB.Success)
-                                {
-                                    preguntaData.Texto = matchPlanB.Groups[1].Value.Trim();
-                                    if (numeroPreguntaReal <= 5)
-                                    {
-                                        Console.WriteLine($"✓ Texto extraído (Plan B): {preguntaData.Texto.Substring(0, Math.Min(80, preguntaData.Texto.Length))}...");
-                                    }
-                                }
-                                else
-                                {
-                                    int posA = bloqueCompleto.IndexOf(" A ");
-                                    if (posA > 0)
-                                    {
-                                        preguntaData.Texto = bloqueCompleto.Substring(0, posA).Trim();
-                                        if (numeroPreguntaReal <= 5)
-                                        {
-                                            Console.WriteLine($"✓ Texto extraído (Plan C): {preguntaData.Texto.Substring(0, Math.Min(80, preguntaData.Texto.Length))}...");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        preguntaData.Texto = bloqueCompleto.Length > 200
-                                            ? bloqueCompleto.Substring(0, 200).Trim()
-                                            : bloqueCompleto.Trim();
-                                        Console.WriteLine($"⚠ Texto extraído (fallback): {preguntaData.Texto.Substring(0, Math.Min(80, preguntaData.Texto.Length))}...");
-                                    }
-                                }
-                            }
-
-                            // Validación de texto muy corto
-                            if (preguntaData.Texto.Length < 15)
-                            {
-                                Console.WriteLine($"⚠ Pregunta {numeroPreguntaReal} - Texto muy corto: '{preguntaData.Texto}'");
-
-                                var matchesA = Regex.Matches(bloqueCompleto, @"(?<![A-Za-z])A\s+");
-
-                                if (matchesA.Count >= 2)
-                                {
-                                    int posSegundaA = matchesA[1].Index;
-                                    preguntaData.Texto = bloqueCompleto.Substring(0, posSegundaA).Trim();
-                                    Console.WriteLine($"  ✓ Corregido usando segunda A: '{preguntaData.Texto.Substring(0, Math.Min(80, preguntaData.Texto.Length))}...'");
-                                }
-                            }
-
-                            // PASO 2: Extraer opciones
-                            string textoOpciones = bloqueCompleto;
-
-                            if (!string.IsNullOrWhiteSpace(preguntaData.Texto) && bloqueCompleto.Contains(preguntaData.Texto))
-                            {
-                                int finPregunta = bloqueCompleto.IndexOf(preguntaData.Texto) + preguntaData.Texto.Length;
-                                if (finPregunta < bloqueCompleto.Length)
-                                {
-                                    textoOpciones = bloqueCompleto.Substring(finPregunta);
-                                }
-                            }
-
-                            // Extraer opciones
-                            var matchA = Regex.Match(textoOpciones, @"(?<![A-Za-z])\s*A\s+(.+?)(?=(?<![A-Za-z])\s*B\s+|$)", RegexOptions.Singleline);
-                            if (matchA.Success)
-                            {
-                                preguntaData.Opciones["A"] = matchA.Groups[1].Value.Trim();
-                            }
-
-                            var matchB = Regex.Match(textoOpciones, @"(?<![A-Za-z])\s*B\s+(.+?)(?=(?<![A-Za-z])\s*C\s+|$)", RegexOptions.Singleline);
-                            if (matchB.Success)
-                            {
-                                preguntaData.Opciones["B"] = matchB.Groups[1].Value.Trim();
-                            }
-
-                            var matchC = Regex.Match(textoOpciones, @"(?<![A-Za-z])\s*C\s+(.+?)(?=(?<![A-Za-z])\s*D\s+|$)", RegexOptions.Singleline);
-                            if (matchC.Success)
-                            {
-                                preguntaData.Opciones["C"] = matchC.Groups[1].Value.Trim();
-                            }
-
-                            var matchD = Regex.Match(textoOpciones, @"(?<![A-Za-z])\s*D\s+(.+?)(?=\d+\.?\s*-?\s*Pregunta:|$)", RegexOptions.Singleline);
-                            if (matchD.Success)
-                            {
-                                preguntaData.Opciones["D"] = matchD.Groups[1].Value.Trim();
-                            }
-
-                            // Validar que tenga las 4 opciones
-                            if (!string.IsNullOrWhiteSpace(preguntaData.Texto) &&
-                                preguntaData.Opciones.Count >= 4 &&
-                                preguntaData.Texto.Length >= 15)
-                            {
-                                resultado.Preguntas.Add(preguntaData);
-
-                                if (numeroPreguntaReal <= 5 || numeroPreguntaReal % 50 == 0)
-                                {
-                                    Console.WriteLine($"✓ Pregunta {numeroPreguntaReal} agregada correctamente");
-                                }
-
-                                numeroPreguntaReal++;
-                            }
-                            else
-                            {
-                                Console.WriteLine($"✗ Pregunta {numeroPreguntaReal} descartada - Texto length: {preguntaData.Texto.Length}, Opciones: {preguntaData.Opciones.Count}");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"✗ Error procesando pregunta: {ex.Message}");
+                            preguntaData.Texto = matchPlanB.Groups[1].Value.Trim();
                         }
                     }
 
-                    Console.WriteLine($"\nTotal preguntas procesadas: {resultado.Preguntas.Count}");
+                    // Extraer opciones A, B, C, D
+                    var patronOpciones = @"(?<![A-Za-z])([A-D])[\s:]+([^\n]+?)(?=\s*(?:[A-D][\s:]|\Z))";
+                    var matchesOpciones = Regex.Matches(bloqueCompleto, patronOpciones, RegexOptions.Singleline);
 
-                    if (resultado.Preguntas.Count == 0)
+                    foreach (Match matchOpcion in matchesOpciones)
                     {
-                        throw new Exception("No se encontraron preguntas válidas en el archivo");
+                        string letra = matchOpcion.Groups[1].Value.Trim().ToUpper();
+                        string textoOpcion = matchOpcion.Groups[2].Value.Trim();
+
+                        if (!preguntaData.Opciones.ContainsKey(letra))
+                        {
+                            preguntaData.Opciones[letra] = textoOpcion;
+                        }
+                    }
+
+                    // Validar y agregar
+                    if (!string.IsNullOrWhiteSpace(preguntaData.Texto) &&
+                        preguntaData.Opciones.Count >= 4 &&
+                        preguntaData.Texto.Length >= 10)
+                    {
+                        resultado.Preguntas.Add(preguntaData);
+                        numeroPreguntaReal++;
                     }
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"✗ Error procesando pregunta: {ex.Message}");
+                }
+            }
+
+            if (resultado.Preguntas.Count == 0)
+            {
+                throw new Exception("No se encontraron preguntas válidas en el archivo");
             }
 
             return resultado;
         }
 
-        private async Task<Dictionary<int, string>> ProcesarArchivoRespuestas(IFormFile archivo)
+        private async Task<Dictionary<int, string>> ProcesarArchivoRespuestasModelo1(IFormFile archivo)
         {
             var respuestas = new Dictionary<int, string>();
 
-            try
+            string textoCompleto;
+            using (var stream = archivo.OpenReadStream())
+            using (var reader = new StreamReader(stream, Encoding.UTF8))
             {
-                using (var stream = archivo.OpenReadStream())
-                {
-                    using (var doc = DocX.Load(stream))
-                    {
-                        // Extraer solo el texto, ignorando tablas y formato complejo
-                        string textoCompleto = "";
-
-                        try
-                        {
-                            textoCompleto = doc.Text;
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"⚠ Error extrayendo texto del documento: {ex.Message}");
-                            Console.WriteLine("Intentando método alternativo...");
-
-                            // Método alternativo: leer párrafos directamente
-                            foreach (var paragraph in doc.Paragraphs)
-                            {
-                                textoCompleto += paragraph.Text + "\n";
-                            }
-                        }
-
-                        Console.WriteLine($"Procesando respuestas, longitud: {textoCompleto.Length}");
-                        Console.WriteLine($"Primeras 300 caracteres:\n{textoCompleto.Substring(0, Math.Min(300, textoCompleto.Length))}");
-
-                        // Buscar patrones como "1 B", "2 C", "3 A", etc.
-                        var patronRespuestas = @"(\d+)[\.\s\-]+([A-D])";
-                        var matches = Regex.Matches(textoCompleto, patronRespuestas);
-
-                        Console.WriteLine($"Coincidencias de respuestas encontradas: {matches.Count}");
-
-                        foreach (Match match in matches)
-                        {
-                            try
-                            {
-                                int numeroPregunta = int.Parse(match.Groups[1].Value);
-                                string respuesta = match.Groups[2].Value.ToUpper().Trim();
-
-                                respuestas[numeroPregunta] = respuesta;
-
-                                // Mostrar solo las primeras 10 y las últimas 10
-                                if (respuestas.Count <= 10 || respuestas.Count > matches.Count - 10)
-                                {
-                                    Console.WriteLine($"  {numeroPregunta} → {respuesta}");
-                                }
-                                else if (respuestas.Count == 11)
-                                {
-                                    Console.WriteLine($"  ... (mostrando solo primeras y últimas 10) ...");
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"✗ Error procesando respuesta '{match.Value}': {ex.Message}");
-                            }
-                        }
-
-                        Console.WriteLine($"Total respuestas procesadas: {respuestas.Count}");
-                    }
-                }
+                textoCompleto = await reader.ReadToEndAsync();
             }
-            catch (Exception ex)
+
+            Console.WriteLine($"Procesando respuestas, longitud: {textoCompleto.Length}");
+
+            var patronRespuestas = @"(\d+)[\.\s\-]+([A-D])";
+            var matches = Regex.Matches(textoCompleto, patronRespuestas);
+
+            Console.WriteLine($"Respuestas encontradas: {matches.Count}");
+
+            foreach (Match match in matches)
             {
-                Console.WriteLine($"✗ Error al abrir archivo de respuestas con Xceed: {ex.Message}");
-                Console.WriteLine("Intentando método alternativo sin Xceed...");
-
-                // PLAN B: Intentar leer como archivo ZIP (los .docx son ZIP internamente)
-                using (var stream = archivo.OpenReadStream())
-                {
-                    using (var package = System.IO.Packaging.Package.Open(stream, FileMode.Open, FileAccess.Read))
-                    {
-                        var documentUri = new Uri("/word/document.xml", UriKind.Relative);
-                        if (package.PartExists(documentUri))
-                        {
-                            var documentPart = package.GetPart(documentUri);
-                            using (var documentStream = documentPart.GetStream())
-                            using (var reader = new StreamReader(documentStream))
-                            {
-                                string xmlContent = reader.ReadToEnd();
-
-                                // Extraer texto del XML (muy básico pero funcional)
-                                var textMatches = Regex.Matches(xmlContent, @"<w:t[^>]*>([^<]+)</w:t>");
-                                string textoCompleto = "";
-                                foreach (Match textMatch in textMatches)
-                                {
-                                    textoCompleto += textMatch.Groups[1].Value + " ";
-                                }
-
-                                Console.WriteLine($"Texto extraído del XML: {textoCompleto.Length} caracteres");
-
-                                // Buscar respuestas
-                                var patronRespuestas = @"(\d+)[\.\s\-]+([A-D])";
-                                var matches = Regex.Matches(textoCompleto, patronRespuestas);
-
-                                Console.WriteLine($"Respuestas encontradas: {matches.Count}");
-
-                                foreach (Match match in matches)
-                                {
-                                    int numeroPregunta = int.Parse(match.Groups[1].Value);
-                                    string respuesta = match.Groups[2].Value.ToUpper().Trim();
-                                    respuestas[numeroPregunta] = respuesta;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (respuestas.Count == 0)
-                {
-                    throw new Exception($"No se pudieron procesar las respuestas. Error original: {ex.Message}");
-                }
+                int numeroPregunta = int.Parse(match.Groups[1].Value);
+                string respuesta = match.Groups[2].Value.ToUpper().Trim();
+                respuestas[numeroPregunta] = respuesta;
             }
 
             return respuestas;
         }
+
+        // ============================================
+        // MÉTODOS DE PROCESAMIENTO MODELO 2 (NUEVO)
+        // ============================================
+
+        private async Task<DatosExamen> ProcesarArchivoCompletoModelo2(IFormFile archivo)
+        {
+            var resultado = new DatosExamen();
+            string textoCompleto = "";
+
+            // Título del archivo
+            resultado.Titulo = Path.GetFileNameWithoutExtension(archivo.FileName).Trim();
+            if (resultado.Titulo.Length > 200)
+            {
+                resultado.Titulo = resultado.Titulo.Substring(0, 200);
+            }
+
+            Console.WriteLine($"Título extraído: '{resultado.Titulo}'");
+
+            try
+            {
+                // INTENTAR LEER COMO .DOCX REAL (con Xceed)
+                using (var stream = archivo.OpenReadStream())
+                {
+                    using (var doc = DocX.Load(stream))
+                    {
+                        textoCompleto = doc.Text;
+                        Console.WriteLine("✓ Archivo leído con Xceed.Words.NET");
+                    }
+                }
+            }
+            catch (Exception exXceed)
+            {
+                Console.WriteLine($"⚠ No se pudo leer con Xceed: {exXceed.Message}");
+                Console.WriteLine("Intentando leer como texto plano...");
+
+                // PLAN B: LEER COMO TEXTO PLANO
+                using (var stream = archivo.OpenReadStream())
+                using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+                {
+                    textoCompleto = await reader.ReadToEndAsync();
+                }
+            }
+
+            Console.WriteLine($"Texto extraído: {textoCompleto.Length} caracteres");
+            Console.WriteLine($"Primeras 500 caracteres:\n{textoCompleto.Substring(0, Math.Min(500, textoCompleto.Length))}");
+
+            // DETECTAR FORMATO AUTOMÁTICAMENTE
+            bool esFormatoA = textoCompleto.Contains("SOLUCION", StringComparison.OrdinalIgnoreCase) ||
+                  textoCompleto.Contains("SOLUCIÓ", StringComparison.OrdinalIgnoreCase);
+
+            bool esFormatoB = textoCompleto.Contains("Respuesta correcta", StringComparison.OrdinalIgnoreCase) ||
+                              textoCompleto.Contains("Resposta correcta", StringComparison.OrdinalIgnoreCase);
+
+            Console.WriteLine($"\nDetección de formato:");
+            Console.WriteLine($"  - Formato A (SOLUCION): {esFormatoA}");
+            Console.WriteLine($"  - Formato B (Respuesta correcta): {esFormatoB}");
+
+            // 🔍 DEBUG: Ver más del contenido
+            Console.WriteLine("\n========== MOSTRANDO MÁS CONTENIDO ==========");
+            Console.WriteLine($"Primeros 2000 caracteres del texto:\n{textoCompleto.Substring(0, Math.Min(2000, textoCompleto.Length))}");
+            Console.WriteLine("\n========== FIN CONTENIDO ==========\n");
+
+            if (esFormatoB)
+            {
+                Console.WriteLine("\n>>> Procesando con FORMATO B <<<");
+                resultado.Preguntas = ProcesarFormatoB(textoCompleto);
+            }
+            else if (esFormatoA)
+            {
+                Console.WriteLine("\n>>> Procesando con FORMATO A <<<");
+                resultado.Preguntas = ProcesarFormatoA(textoCompleto);
+            }
+            else
+            {
+                throw new Exception("No se pudo detectar el formato del archivo. Asegúrate de que contenga 'SOLUCION' o 'Respuesta correcta'");
+            }
+
+            Console.WriteLine($"\nTotal preguntas procesadas: {resultado.Preguntas.Count}");
+
+            if (resultado.Preguntas.Count == 0)
+            {
+                throw new Exception("No se encontraron preguntas válidas en el archivo. Verifica el formato.");
+            }
+
+            return resultado;
+        }
+
+        // FORMATO A: PREGUNTA: ... A: ... B: ... SOLUCION: X
+        private List<PreguntaData> ProcesarFormatoA(string texto)
+        {
+            var preguntas = new List<PreguntaData>();
+
+            // Patrón: buscar bloques que empiezan con "PREGUNTA:" hasta el siguiente "PREGUNTA:" o fin
+            var patronBloques = @"PREGUNTA:\s*(.+?)(?=PREGUNTA:|$)";
+            var bloques = Regex.Matches(texto, patronBloques, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            Console.WriteLine($"Bloques FORMATO A encontrados: {bloques.Count}");
+
+            int numeroPregunta = 1;
+
+            foreach (Match bloque in bloques)
+            {
+                try
+                {
+                    string contenido = bloque.Groups[1].Value;
+
+                    Console.WriteLine($"\n=== Procesando Pregunta {numeroPregunta} (Formato A) ===");
+
+                    var preguntaData = new PreguntaData
+                    {
+                        Numero = numeroPregunta,
+                        Texto = "",
+                        Opciones = new Dictionary<string, string>(),
+                        RespuestaCorrecta = ""
+                    };
+
+                    // 1. Extraer SOLUCION primero
+                    var matchSolucion = Regex.Match(contenido, @"SOLUCION\s*:\s*([A-D])", RegexOptions.IgnoreCase);
+                    if (!matchSolucion.Success)
+                    {
+                        Console.WriteLine($"✗ No se encontró SOLUCION");
+                        continue;
+                    }
+                    preguntaData.RespuestaCorrecta = matchSolucion.Groups[1].Value.ToUpper().Trim();
+
+                    // 2. Extraer TODO desde el inicio hasta "SOLUCION" (esto incluye pregunta + opciones)
+                    var matchHastaSolucion = Regex.Match(contenido, @"^(.+?)SOLUCION", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                    if (!matchHastaSolucion.Success)
+                    {
+                        Console.WriteLine($"✗ No se pudo extraer bloque pregunta+opciones");
+                        continue;
+                    }
+
+                    string bloquePreguntaOpciones = matchHastaSolucion.Groups[1].Value.Trim();
+
+                    // 3. Extraer texto de la pregunta (desde inicio hasta "A:")
+                    var matchTexto = Regex.Match(bloquePreguntaOpciones, @"^(.+?)\s*A\s*:", RegexOptions.Singleline);
+                    if (!matchTexto.Success)
+                    {
+                        Console.WriteLine($"✗ No se pudo extraer texto de pregunta");
+                        continue;
+                    }
+
+                    preguntaData.Texto = matchTexto.Groups[1].Value.Trim();
+                    preguntaData.Texto = Regex.Replace(preguntaData.Texto, @"\s+", " ");
+
+                    if (numeroPregunta <= 10)
+                    {
+                        Console.WriteLine($"Texto: {preguntaData.Texto.Substring(0, Math.Min(100, preguntaData.Texto.Length))}...");
+                    }
+
+                    // 4. Extraer cada opción A, B, C, D
+                    // Este patrón funciona tanto si están juntas como separadas por saltos de línea
+                    var patronOpciones = @"([A-D])\s*:\s*(.+?)(?=\s*[ABCD]\s*:|$)";
+                    var matchesOpciones = Regex.Matches(bloquePreguntaOpciones, patronOpciones, RegexOptions.Singleline);
+
+                    foreach (Match matchOpcion in matchesOpciones)
+                    {
+                        string letra = matchOpcion.Groups[1].Value.ToUpper().Trim();
+                        string textoOpcion = matchOpcion.Groups[2].Value.Trim();
+
+                        // Limpiar múltiples espacios
+                        textoOpcion = Regex.Replace(textoOpcion, @"\s+", " ");
+
+                        if (!preguntaData.Opciones.ContainsKey(letra) && !string.IsNullOrWhiteSpace(textoOpcion))
+                        {
+                            preguntaData.Opciones[letra] = textoOpcion;
+
+                            if (numeroPregunta <= 10)
+                            {
+                                Console.WriteLine($"  Opción {letra}: {textoOpcion.Substring(0, Math.Min(50, textoOpcion.Length))}...");
+                            }
+                        }
+                    }
+
+                    // 5. Validar y agregar
+                    if (!string.IsNullOrWhiteSpace(preguntaData.Texto) &&
+                        preguntaData.Opciones.Count == 4 &&
+                        preguntaData.Opciones.ContainsKey("A") &&
+                        preguntaData.Opciones.ContainsKey("B") &&
+                        preguntaData.Opciones.ContainsKey("C") &&
+                        preguntaData.Opciones.ContainsKey("D") &&
+                        !string.IsNullOrWhiteSpace(preguntaData.RespuestaCorrecta))
+                    {
+                        preguntas.Add(preguntaData);
+
+                        if (numeroPregunta <= 10)
+                        {
+                            Console.WriteLine($"✓ Pregunta {numeroPregunta} agregada - Respuesta: {preguntaData.RespuestaCorrecta}");
+                        }
+
+                        numeroPregunta++;
+                    }
+                    else
+                    {
+                        if (numeroPregunta <= 10)
+                        {
+                            Console.WriteLine($"✗ Pregunta descartada:");
+                            Console.WriteLine($"   - Texto length: {preguntaData.Texto.Length}");
+                            Console.WriteLine($"   - Opciones encontradas: {string.Join(", ", preguntaData.Opciones.Keys)}");
+                            Console.WriteLine($"   - Total opciones: {preguntaData.Opciones.Count}");
+                            Console.WriteLine($"   - Respuesta: '{preguntaData.RespuestaCorrecta}'");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"✗ Error: {ex.Message}");
+                }
+            }
+
+            return preguntas;
+        }
+
+        // FORMATO B: PREGUNTA X - ... A. ... B. ... Respuesta correcta: X
+
+        private List<PreguntaData> ProcesarFormatoB(string texto)
+        {
+            var preguntas = new List<PreguntaData>();
+
+            var patronBloques = @"PREGUNTA\s+(\d+)\s*-\s*(.+?)(?=PREGUNTA\s+\d+\s*-|$)";
+            var bloques = Regex.Matches(texto, patronBloques, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            Console.WriteLine($"Bloques FORMATO B encontrados: {bloques.Count}");
+
+            foreach (Match bloque in bloques)
+            {
+                try
+                {
+                    int numeroPregunta = int.Parse(bloque.Groups[1].Value);
+                    string contenido = bloque.Groups[2].Value;
+
+                    // DEBUG pregunta 45 - contenido COMPLETO antes de procesar
+                    if (numeroPregunta == 45)
+                    {
+                        Console.WriteLine($"\n========== DEBUG PREGUNTA 45 - CONTENIDO COMPLETO ==========");
+                        Console.WriteLine(contenido);
+                        Console.WriteLine("========== FIN DEBUG ==========\n");
+                    }
+
+                    Console.WriteLine($"Procesando pregunta {numeroPregunta}...");
+
+                    if (numeroPregunta <= 10 || numeroPregunta > 190)
+                    {
+                        Console.WriteLine($"\n=== Procesando Pregunta {numeroPregunta} (Formato B) ===");
+                    }
+
+                    var preguntaData = new PreguntaData
+                    {
+                        Numero = numeroPregunta,
+                        Texto = "",
+                        Opciones = new Dictionary<string, string>(),
+                        RespuestaCorrecta = ""
+                    };
+
+                    // 1. Extraer Respuesta correcta
+                    var matchRespuesta = Regex.Match(contenido, @"Resp(uesta|osta)\s+correcta\s*:\s*([A-D])", RegexOptions.IgnoreCase);
+                    if (!matchRespuesta.Success)
+                    {
+                        Console.WriteLine($"✗ Pregunta {numeroPregunta} - No se encontró respuesta correcta");
+                        continue;
+                    }
+
+                    preguntaData.RespuestaCorrecta = matchRespuesta.Groups[2].Value.ToUpper().Trim();
+
+                    // 2. Extraer bloque pregunta+opciones (hasta "Respuesta alumno")
+                    var matchHastaRespuesta = Regex.Match(contenido, @"^(.+?)\s*Resp(uesta|osta)\s+alumn(o|e)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                    if (!matchHastaRespuesta.Success)
+                    {
+                        Console.WriteLine($"✗ Pregunta {numeroPregunta} - No se encontró 'Respuesta alumno'");
+                        continue;
+                    }
+
+                    string bloquePreguntaOpciones = matchHastaRespuesta.Groups[1].Value.Trim();
+
+                    // DEBUG para preguntas problemáticas
+                    if (numeroPregunta == 35 || numeroPregunta == 39 || numeroPregunta == 55 ||
+                        numeroPregunta == 113 || numeroPregunta == 125 || numeroPregunta == 174)
+                    {
+                        Console.WriteLine($"\n>>> DEBUG PREGUNTA {numeroPregunta} <<<");
+                        Console.WriteLine($"Primeros 500 caracteres:");
+                        Console.WriteLine(bloquePreguntaOpciones.Substring(0, Math.Min(500, bloquePreguntaOpciones.Length)));
+                        Console.WriteLine(">>> FIN DEBUG <<<\n");
+                    }
+
+                    // 3. Buscar dónde termina la pregunta
+                    int indicePregunta = bloquePreguntaOpciones.IndexOf('?');
+
+                    // Si no hay "?", buscar donde empieza la primera opción
+                    if (indicePregunta == -1)
+                    {
+                        // PATRÓN 1: letra minúscula/número/paréntesis + espacio + MAYÚSCULA
+                        var matchFinPregunta = Regex.Match(bloquePreguntaOpciones, @"[a-z\d\)]\s+([A-Z])");
+
+                        // PATRÓN 2: punto + espacio + minúscula (para preguntas que terminan con punto)
+                        if (!matchFinPregunta.Success)
+                        {
+                            matchFinPregunta = Regex.Match(bloquePreguntaOpciones, @"\.\s+([A-Za-z])");
+                        }
+
+                        // PATRÓN 3: dos puntos + cualquier carácter (mayúscula, minúscula o número)
+                        if (!matchFinPregunta.Success)
+                        {
+                            matchFinPregunta = Regex.Match(bloquePreguntaOpciones, @":([A-Za-z0-9])");
+                        }
+
+                        // PATRÓN 4: tres puntos suspensivos + cualquier carácter
+                        if (!matchFinPregunta.Success)
+                        {
+                            matchFinPregunta = Regex.Match(bloquePreguntaOpciones, @"\.\.\.\s*([A-Za-z])");
+                        }
+
+                        if (matchFinPregunta.Success)
+                        {
+                            // Ajustar índice según el patrón detectado
+                            if (matchFinPregunta.Value.Contains("..."))
+                            {
+                                // Para tres puntos, incluir los 3 puntos completos
+                                indicePregunta = matchFinPregunta.Index + 2; // Posición del último punto
+                            }
+                            else
+                            {
+                                indicePregunta = matchFinPregunta.Index; // Para otros patrones
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"✗ Pregunta {numeroPregunta} - No se pudo detectar fin de pregunta (sin '?' ni patrón reconocible)");
+                            continue;
+                        }
+                    }
+
+                    preguntaData.Texto = bloquePreguntaOpciones.Substring(0, indicePregunta + 1).Trim();
+                    preguntaData.Texto = Regex.Replace(preguntaData.Texto, @"\s+", " ");
+
+                    if (numeroPregunta <= 10 || numeroPregunta > 190)
+                    {
+                        Console.WriteLine($"Texto: {preguntaData.Texto.Substring(0, Math.Min(100, preguntaData.Texto.Length))}...");
+                    }
+
+                    // 4. Extraer las 4 opciones (todo lo que queda después de la pregunta)
+                    int inicioOpciones = preguntaData.Texto.EndsWith("?") ? indicePregunta + 1 : indicePregunta + 1;
+
+                    // Si terminaba en punto, ajustar para no incluir el punto en las opciones
+                    if (preguntaData.Texto.EndsWith(".") && indicePregunta < bloquePreguntaOpciones.Length)
+                    {
+                        inicioOpciones = indicePregunta + 1;
+                    }
+
+                    string bloqueOpciones = bloquePreguntaOpciones.Substring(inicioOpciones).Trim();
+
+                    // ESTRATEGIA: Dividir palabra por palabra y detectar inicio de nueva opción
+                    var opcionesEncontradas = new List<string>();
+                    var palabras = bloqueOpciones.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    string opcionActual = "";
+
+                    foreach (var palabra in palabras)
+                    {
+                        // Si encontramos "Respuesta", terminamos
+                        if (palabra.StartsWith("Respuesta", StringComparison.OrdinalIgnoreCase))
+                        {
+                            break;
+                        }
+
+                        // Si encontramos inicio de nueva opción (mayúscula y ya tenemos contenido)
+                        if (!string.IsNullOrEmpty(opcionActual) &&
+                           char.IsUpper(palabra[0]) &&
+                           opcionActual.Length >= 2 &&  // ← Cambiar solo esta línea
+                           opcionesEncontradas.Count < 4)
+                        {
+                            // Guardar la opción anterior
+                            string opcionLimpia = opcionActual.Trim().TrimEnd('.');
+                            if (opcionLimpia.Length >= 2)
+                            {
+                                opcionesEncontradas.Add(opcionLimpia);
+                            }
+                            opcionActual = palabra;
+                        }
+                        else
+                        {
+                            opcionActual += (string.IsNullOrEmpty(opcionActual) ? "" : " ") + palabra;
+                        }
+                    }
+
+                    // Agregar la última opción si no llegamos a 4
+                    if (!string.IsNullOrEmpty(opcionActual) && opcionesEncontradas.Count < 4)
+                    {
+                        // Limpiar "Respuesta" si quedó pegado
+                        opcionActual = Regex.Replace(opcionActual, @"\s*Respuesta\s+.*$", "", RegexOptions.IgnoreCase);
+                        string opcionLimpia = opcionActual.Trim().TrimEnd('.');
+                        if (opcionLimpia.Length >= 2)
+                        {
+                            opcionesEncontradas.Add(opcionLimpia);
+                        }
+                    }
+
+                    // Si no tenemos exactamente 4 opciones, intentar método alternativo (split por punto)
+                    if (opcionesEncontradas.Count != 4)
+                    {
+                        if (numeroPregunta <= 10 || numeroPregunta > 190)
+                        {
+                            Console.WriteLine($"  ⚠ Método 1 encontró {opcionesEncontradas.Count} opciones, intentando método alternativo...");
+                        }
+
+                        opcionesEncontradas.Clear();
+
+                        // Método alternativo: dividir por punto y tomar frases >= 2 caracteres
+                        var frases = bloqueOpciones.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var frase in frases)
+                        {
+                            string fraseClean = frase.Trim();
+
+                            if (fraseClean.StartsWith("Respuesta", StringComparison.OrdinalIgnoreCase))
+                            {
+                                break;
+                            }
+
+                            if (fraseClean.Length >= 2 &&
+                                !fraseClean.StartsWith("Ley/", StringComparison.OrdinalIgnoreCase) &&
+                                opcionesEncontradas.Count < 4)
+                            {
+                                opcionesEncontradas.Add(fraseClean);
+                            }
+                        }
+                    }
+
+                    // Asignar las opciones a A, B, C, D
+                    string[] letras = { "A", "B", "C", "D" };
+
+                    for (int i = 0; i < Math.Min(4, opcionesEncontradas.Count); i++)
+                    {
+                        string textoOpcion = opcionesEncontradas[i].Trim();
+                        textoOpcion = Regex.Replace(textoOpcion, @"\s+", " ");
+
+                        preguntaData.Opciones[letras[i]] = textoOpcion;
+
+                        if (numeroPregunta <= 10 || numeroPregunta > 190)
+                        {
+                            Console.WriteLine($"  Opción {letras[i]}: {textoOpcion.Substring(0, Math.Min(60, textoOpcion.Length))}...");
+                        }
+                    }
+
+                    if (numeroPregunta == 45 || numeroPregunta == 105)
+                    {
+                        Console.WriteLine($"\n>>> DEBUG OPCIONES PREGUNTA {numeroPregunta} <<<");
+                        Console.WriteLine($"Bloque opciones completo:");
+                        Console.WriteLine(bloqueOpciones.Substring(0, Math.Min(800, bloqueOpciones.Length)));
+                        Console.WriteLine($"\nOpciones encontradas: {opcionesEncontradas.Count}");
+                        for (int i = 0; i < opcionesEncontradas.Count; i++)
+                        {
+                            Console.WriteLine($"  Opción {i + 1}: {opcionesEncontradas[i]}");
+                        }
+                        Console.WriteLine(">>> FIN DEBUG OPCIONES <<<\n");
+                    }
+
+                    // 5. Validar
+                    if (!string.IsNullOrWhiteSpace(preguntaData.Texto) &&
+                        preguntaData.Opciones.Count == 4 &&
+                        !string.IsNullOrWhiteSpace(preguntaData.RespuestaCorrecta))
+                    {
+                        preguntas.Add(preguntaData);
+
+                        if (numeroPregunta <= 10 || numeroPregunta > 190)
+                        {
+                            Console.WriteLine($"✓ Pregunta {numeroPregunta} agregada - Respuesta: {preguntaData.RespuestaCorrecta}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"✗ Pregunta {numeroPregunta} descartada:");
+                        Console.WriteLine($"   - Texto: {preguntaData.Texto.Length} chars");
+                        Console.WriteLine($"   - Opciones: {preguntaData.Opciones.Count}");
+                        Console.WriteLine($"   - Respuesta: '{preguntaData.RespuestaCorrecta}'");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"✗ Error en pregunta: {ex.Message}");
+                }
+            }
+
+            Console.WriteLine($"\n========================================");
+            Console.WriteLine($"RESUMEN: {preguntas.Count} preguntas procesadas de {bloques.Count} bloques encontrados");
+            Console.WriteLine($"========================================");
+
+            return preguntas;
+        }
+
+
+
     }
 
     // Clases auxiliares (DTOs)
@@ -424,5 +799,6 @@ namespace ExamenTransporte.Controllers
         public int Numero { get; set; }
         public string Texto { get; set; }
         public Dictionary<string, string> Opciones { get; set; }
+        public string RespuestaCorrecta { get; set; } // Para modelo 2
     }
 }

@@ -1,119 +1,289 @@
 @model ExamenTransporte.Models.CargaExamenViewModel
+
 @{
     ViewData["Title"] = "Cargar Examen";
 }
 
-<div class="container mx-auto px-4 py-8" style="max-width: 1024px;">
-    
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - BarnaStudio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+        --color-primary: #2f6cd6;
+        --color-success: #8cf26a;
+        --color-error: #f26a6a;
+        }
+        
+        .tab-active {
+        background-color: var(--color-primary);
+        color: white;
+        }
+        
+        .tab-inactive {
+        background-color: #f3f4f6;
+        color: #6b7280;
+        }
+        
+        .tab-inactive:hover {
+        background-color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
     <!-- Header -->
-    <div class="card-custom">
-        <div class="flex items-center justify-center mb-2">
-            <svg class="icon-primary" style="width: 40px; height: 40px; margin-right: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <h1 class="text-primary" style="font-size: 28px; font-weight: bold; margin: 0;">
-                Sistema de Exámenes de Transporte
-            </h1>
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8" style="color: var(--color-primary)" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-900">ExamenTransporte</h1>
+                    <span class="text-sm text-gray-500 hidden sm:inline">by BarnaStudio</span>
+                </div>
+                <a href="/" class="text-sm font-medium hover:underline" style="color: var(--color-primary)">
+                    Volver al inicio
+                </a>
+            </div>
         </div>
-        <p class="text-center" style="color: #718096; margin-top: 8px;">
-            Carga los archivos de examen y respuestas en formato Word
-        </p>
-    </div>
+    </header>
 
-    <!-- Formulario -->
-    <div class="card-custom">
-        <form asp-action="CargarArchivos" method="post" enctype="multipart/form-data">
-            
-            <!-- Archivo de Examen -->
-            <div style="margin-bottom: 24px;">
-                <label class="form-label-custom">
-                    <svg class="icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                    </svg>
-                    Archivo de Examen
-                </label>
-                <input 
-                    type="file" 
-                    asp-for="ArchivoExamen"
-                    accept=".doc,.docx"
-                    class="form-input-custom"
-                    required
-                />
-                <p style="margin-top: 4px; font-size: 12px; color: #718096;">
-                    Formato: .DOC o .DOCX (Microsoft Word)
-                </p>
-            </div>
-
-            <!-- Archivo de Respuestas -->
-            <div style="margin-bottom: 24px;">
-                <label class="form-label-custom">
-                    <svg class="icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Archivo de Respuestas
-                </label>
-                <input 
-                    type="file" 
-                    asp-for="ArchivoRespuestas"
-                    accept=".doc,.docx"
-                    class="form-input-custom"
-                    required
-                />
-                <p style="margin-top: 4px; font-size: 12px; color: #718096;">
-                    Formato: .DOC o .DOCX (Microsoft Word)
-                </p>
-            </div>
-
-            <!-- Botón de Envío -->
-            <div style="padding-top: 16px;">
-                <button type="submit" class="btn-primary-custom" style="width: 100%; display: flex; align-items: center; justify-content: center;">
-                    <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                    </svg>
-                    Cargar y Procesar Archivos
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200">
+                <button onclick="switchTab(1)" id="tab-1" class="flex-1 py-4 px-6 text-center font-semibold transition tab-active">
+                    Modelo 1 - Dos Archivos
+                </button>
+                <button onclick="switchTab(2)" id="tab-2" class="flex-1 py-4 px-6 text-center font-semibold transition tab-inactive">
+                    Modelo 2 - Un Archivo
                 </button>
             </div>
-        </form>
 
-        <!-- Mensaje de resultado -->
-        @if (!string.IsNullOrEmpty(Model.Mensaje))
-        {
-            if (Model.Exito)
+            <!-- Mensajes de resultado -->
+            @if (!string.IsNullOrEmpty(Model.Mensaje))
             {
-                <div class="alert-success-custom" style="margin-top: 24px;">
-                    <svg class="icon-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p style="font-weight: 600; margin: 0;">@Model.Mensaje</p>
+                <div class="p-6">
+                    <div class="rounded-lg p-4 @(Model.Exito ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")">
+                        <div class="flex items-start gap-3">
+                            @if (Model.Exito)
+                            {
+                                <svg class="w-6 h-6 flex-shrink-0" style="color: var(--color-success)" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg class="w-6 h-6 flex-shrink-0" style="color: var(--color-error)" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            }
+                            <div class="flex-1">
+                                <p class="font-semibold @(Model.Exito ? "text-green-800" : "text-red-800")">
+                                    @(Model.Exito ? "¡Éxito!" : "Error")
+                                </p>
+                                <p class="text-sm @(Model.Exito ? "text-green-700" : "text-red-700") mt-1">
+                                    @Model.Mensaje
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             }
-            else
-            {
-                <div class="alert-error-custom" style="margin-top: 24px;">
-                    <svg class="icon-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p style="font-weight: 600; margin: 0;">@Model.Mensaje</p>
-                </div>
-            }
-        }
-    </div>
 
-    <!-- Información adicional -->
-    <div class="info-box">
-        <div>
-            <svg class="icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-        </div>
-        <div>
-            <h3 class="text-primary" style="font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">
-                Formato de Archivos
-            </h3>
-            <div class="text-primary-dark" style="font-size: 14px;">
-                <p style="margin: 4px 0;"><strong>Archivo de Examen:</strong> Documento Word (.doc o .docx) con las preguntas y opciones</p>
-                <p style="margin: 4px 0;"><strong>Archivo de Respuestas:</strong> Documento Word (.doc o .docx) con las respuestas correctas</p>
+            <!-- Content Modelo 1 -->
+            <div id="content-1" class="p-6">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Cargar Examen - Modelo 1</h2>
+                    <p class="text-sm text-gray-600">Sube dos archivos Word (.docx): uno con las preguntas y otro con las respuestas</p>
+                </div>
+
+                <form asp-action="CargarArchivosModelo1" method="post" enctype="multipart/form-data" class="space-y-6">
+                    <!-- Archivo de Preguntas -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Archivo de Preguntas (.docx)
+                        </label>
+                        <div class="relative">
+                            <input type="file"
+                                   name="ArchivoExamen"
+                                   accept=".docx,.doc"
+                                   required
+                                   class="block w-full text-sm text-gray-700 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:cursor-pointer hover:file:bg-blue-50 transition"
+                                   style="file:background-color: #eff6ff; file:color: var(--color-primary)">
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">Formato: "Pregunta: ¿Texto? A ... B ... C ... D ..."</p>
+                    </div>
+
+                    <!-- Archivo de Respuestas -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Archivo de Respuestas (.docx)
+                        </label>
+                        <div class="relative">
+                            <input type="file"
+                                   name="ArchivoRespuestas"
+                                   accept=".docx,.doc"
+                                   required
+                                   class="block w-full text-sm text-gray-700 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:cursor-pointer hover:file:bg-blue-50 transition"
+                                   style="file:background-color: #eff6ff; file:color: var(--color-primary)">
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">Formato: "1 A", "2 B", "3 C", etc.</p>
+                    </div>
+
+                    <!-- Botón Submit -->
+                    <div class="pt-4">
+                        <button type="submit"
+                                class="w-full py-3 px-6 rounded-lg font-semibold text-white shadow-md hover:shadow-lg transition"
+                                style="background-color: var(--color-primary)">
+                            <span class="flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                Cargar Examen (Modelo 1)
+                            </span>
+                        </button>
+                    </div>
+                </form>
             </div>
-        </div>
-    </div>
-</div>
+
+            <!-- Content Modelo 2 -->
+            <div id="content-2" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Cargar Examen - Modelo 2</h2>
+                    <p class="text-sm text-gray-600">Sube un archivo Word (.docx) que contenga preguntas con respuestas incluidas</p>
+                </div>
+
+                <form asp-action="CargarArchivoModelo2" method="post" enctype="multipart/form-data" class="space-y-6">
+                    <!-- Archivo Completo -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Archivo Completo (.docx)
+                        </label>
+                        <div class="relative">
+                            <input type="file"
+                                   name="ArchivoCompleto"
+                                   accept=".docx,.doc"
+                                   required
+                                   class="block w-full text-sm text-gray-700 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:cursor-pointer hover:file:bg-blue-50 transition"
+                                   style="file:background-color: #eff6ff; file:color: var(--color-primary)">
+                        </div>
+                        <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="text-xs font-semibold text-gray-700 mb-2">Formatos aceptados:</p>
+                            
+                            <div class="space-y-2">
+                                <div>
+                                    <p class="text-xs font-medium text-gray-600">Formato A:</p>
+                                    <pre class="text-xs text-gray-600 mt-1">PREGUNTA: ¿Texto?
+                                        A: Opción A
+                                        B: Opción B
+                                        C: Opción C
+                                        D: Opción D
+                                        SOLUCION: A</pre>
+                                    </div>
+    
+                                    <div class="pt-2">
+                                        <p class="text-xs font-medium text-gray-600">Formato B:</p>
+                                        <pre class="text-xs text-gray-600 mt-1">PREGUNTA 1 - ¿Texto?
+                                            A. Opción A
+                                            B. Opción B
+                                            C. Opción C
+                                            D. Opción D
+                                            Respuesta correcta: A</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div class="flex gap-3">
+                                    <svg class="w-5 h-5 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm font-semibold text-yellow-800">Importante</p>
+                                        <p class="text-xs text-yellow-700 mt-1">
+                                            Si tu archivo es PDF, primero conviértelo a .docx usando <strong>iLovePDF</strong> u otra herramienta similar, luego cárgalo aquí.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botón Submit -->
+                            <div class="pt-4">
+                                <button type="submit"
+                                        class="w-full py-3 px-6 rounded-lg font-semibold text-white shadow-md hover:shadow-lg transition"
+                                        style="background-color: var(--color-primary)">
+                                    <span class="flex items-center justify-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                        </svg>
+                                        Cargar Examen (Modelo 2)
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Información adicional -->
+                <div class="mt-8 bg-blue-50 rounded-lg p-6 border border-blue-200">
+                    <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <svg class="w-5 h-5" style="color: var(--color-primary)" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        ¿Qué modelo debo usar?
+                    </h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <span class="font-bold" style="color: var(--color-primary)">•</span>
+                            <span><strong>Modelo 1:</strong> Para exámenes donde tienes las preguntas en un archivo y las respuestas en otro archivo separado</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="font-bold" style="color: var(--color-primary)">•</span>
+                            <span><strong>Modelo 2:</strong> Para exámenes donde cada pregunta incluye su respuesta correcta en el mismo documento (convertidos de PDF con iLovePDF)</span>
+                        </li>
+                    </ul>
+                </div>
+            </main>
+
+            <script>
+                function switchTab(tabNumber) {
+                // Actualizar pestañas
+                if (tabNumber === 1) {
+                document.getElementById('tab-1').classList.remove('tab-inactive');
+                document.getElementById('tab-1').classList.add('tab-active');
+                document.getElementById('tab-2').classList.remove('tab-active');
+                document.getElementById('tab-2').classList.add('tab-inactive');
+                
+                document.getElementById('content-1').classList.remove('hidden');
+                document.getElementById('content-2').classList.add('hidden');
+                } else {
+                document.getElementById('tab-2').classList.remove('tab-inactive');
+                document.getElementById('tab-2').classList.add('tab-active');
+                document.getElementById('tab-1').classList.remove('tab-active');
+                document.getElementById('tab-1').classList.add('tab-inactive');
+                
+                document.getElementById('content-2').classList.remove('hidden');
+                document.getElementById('content-1').classList.add('hidden');
+                }
+                }
+
+                // Mostrar la pestaña correcta al cargar si hubo un mensaje
+                @if (Model.ModeloCarga == 2)
+                {
+                    <text>
+                        window.addEventListener('DOMContentLoaded', function() {
+                        switchTab(2);
+                        });
+                    </text>
+                }
+            </script>
+        </body>
+    </html>
