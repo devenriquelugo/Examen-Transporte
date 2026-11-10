@@ -1,0 +1,45 @@
+name: Deploy to Azure
+
+# A push to main (or a manual run) builds the site and publishes it to the Azure App Service
+# "examen-transporte" (Linux, .NET 10, plan tableboss-plan). The database connection string lives in the
+# App Service configuration (DefaultConnection), never in the repo.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish
+        run: dotnet publish ExamenTransporte.csproj -c Release -o site
+      - name: Deploy
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME || 'examen-transporte' }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: site
+      - name: Smoke test
+        env:
+          SITE_URL: ${{ steps.deploy.outputs.webapp-url }}
+        run: |
+          url="${SITE_URL%/}"
+          echo "Checking $url"
+          # Cold start, plus the free Azure SQL database may be waking up from auto-pause.
+          for i in $(seq 1 18); do
+            if curl -fsS --max-time 60 -o /dev/null "$url/"; then echo "Site is up"; exit 0; fi
+            echo "Not answering yet ($i/18), retrying in 10 s"
+            sleep 10
+          done
+          echo "::error::The site did not answer"; exit 1
